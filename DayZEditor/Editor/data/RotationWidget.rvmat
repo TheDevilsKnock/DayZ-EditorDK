@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////////
-//DeRap: editor\data\RotationWidget\rotationwidget.rvmat
-//Produced from mikero's Dos Tools Dll version 6.44
-//'now' is Tue Jul 21 08:06:58 2020 : 'file' last modified on Tue Jul 21 07:35:07 2020
-//http://dev-heaven.net/projects/list_files/mikero-pbodll
+//DeRap: data\RotationWidget.rvmat
+//Produced from mikero's Dos Tools Dll version 9.10
+//https://mikero.bytex.digital/Downloads
+//'now' is Thu Jan 18 01:21:05 2024 : 'file' last modified on Wed Jul 12 04:28:01 2023
 ////////////////////////////////////////////////////////////////////
 
 #define _ARMA_

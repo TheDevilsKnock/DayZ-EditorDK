@@ -1,3 +1,12 @@
+////////////////////////////////////////////////////////////////////
+//DeRap: config.bin
+//Produced from mikero's Dos Tools Dll version 9.10
+//https://mikero.bytex.digital/Downloads
+//'now' is Thu Jan 18 01:21:06 2024 : 'file' last modified on Wed Jul 12 04:28:07 2023
+////////////////////////////////////////////////////////////////////
+
+#define _ARMA_
+
 class CfgPatches
 {
 	class Editor_Sounds
@@ -8,7 +17,6 @@ class CfgPatches
 		requiredAddons[] = {"DZ_Data"};
 	};
 };
-
 class CfgSoundShaders
 {
 	class Editor_Soundshader
@@ -19,17 +27,15 @@ class CfgSoundShaders
 		rangeCurve[] = {{0,1},{5,0.7},{10,0}};
 		limitation = 0;
 	};
-
 	class Notification_Soundshader: Editor_Soundshader
 	{
-		samples[] = {{"DayZEditor\sounds\notification", 1}};
+		samples[] = {{"DayZEditor\sounds\notification",1}};
 	};
 	class THX_Soundshader: Editor_Soundshader
 	{
-		samples[] = {{"DayZEditor\sounds\thx", 1}};
+		samples[] = {{"DayZEditor\sounds\thx",1}};
 	};
 };
-
 class CfgSoundSets
 {
 	class Editor_Soundset
@@ -49,4 +55,3 @@ class CfgSoundSets
 		soundShaders[] = {"THX_Soundshader"};
 	};
 };
-

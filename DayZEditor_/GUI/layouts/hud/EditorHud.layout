@@ -1,0 +1,1697 @@
+FrameWidgetClass EditorFrame {
+ visible 1
+ disabled 0
+ clipchildren 0
+ inheritalpha 0
+ ignorepointer 1
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ scaled 0
+ draggable 0
+ scriptclass "EditorHudController"
+ {
+  FrameWidgetClass EditorHudFrame {
+   visible 1
+   ignorepointer 1
+   position 0 0
+   size 1 1
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+   priority 100
+   {
+    CanvasWidgetClass EditorCanvas {
+     ignorepointer 1
+     position 0 -0.00026
+     size 1 1
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     priority 239
+    }
+    WrapSpacerWidgetClass LeftbarWrapper {
+     visible 1
+     clipchildren 1
+     ignorepointer 1
+     position 0 0.055
+     size 310 0.93
+     hexactpos 0
+     vexactpos 0
+     hexactsize 1
+     vexactsize 0
+     Padding 0
+     Margin 0
+     {
+      PanelWidgetClass LeftbarFrame {
+       visible 1
+       clipchildren 1
+       ignorepointer 0
+       keepsafezone 1
+       color 0.098 0.098 0.098 0.7843
+       size 0.92 1
+       hexactpos 0
+       vexactpos 0
+       hexactsize 0
+       vexactsize 0
+       priority 1
+       style rover_sim_colorable
+       "no focus" 0
+       {
+        WrapSpacerWidgetClass LeftbarFrameWrapSpacer {
+         visible 1
+         clipchildren 1
+         ignorepointer 1
+         position 0 0
+         size 1 1
+         halign center_ref
+         valign center_ref
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+         style Empty
+         Padding 0
+         Margin 0
+         content_halign center
+         {
+          PanelWidgetClass LeftbarPanelSearchBarPanel {
+           visible 1
+           ignorepointer 1
+           color 0.0392 0.0392 0.0392 1
+           position 0 0
+           size 1 34
+           halign center_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 0
+           vexactsize 1
+           style rover_sim_colorable
+           {
+            ButtonWidgetClass LeftbarPanelSearchBarIconButton {
+             visible 1
+             disabled 1
+             ignorepointer 0
+             color 0.7529 0.3686 0.3255 1
+             size 32 32
+             halign right_ref
+             valign center_ref
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             scriptclass "ViewBinding"
+             style Default
+             "no focus" 1
+             {
+              ImageWidgetClass LeftbarPanelSearchBarIcon {
+               ignorepointer 1
+               position 0 0
+               size 1 1
+               halign center_ref
+               valign center_ref
+               hexactpos 0
+               vexactpos 0
+               hexactsize 0
+               vexactsize 0
+               scriptclass "ViewBinding"
+               image0 ""
+               mode blend
+               "src alpha" 1
+               "clamp mode" clamp
+               filter 1
+               {
+                ScriptParamsClass {
+                 Binding_Name "SearchBarIcon"
+                }
+               }
+              }
+             }
+             {
+              ScriptParamsClass {
+               Relay_Command "OnSearchButtonPress"
+              }
+             }
+            }
+            EditBoxWidgetClass LeftbarSearchBar {
+             visible 1
+             color 0.6353 0.6353 0.6353 1
+             position 32 0
+             size 0.831 1
+             halign right_ref
+             valign center_ref
+             hexactpos 1
+             vexactpos 1
+             hexactsize 0
+             vexactsize 0
+             scriptclass "ViewBinding"
+             style Default
+             text "#STR_EDITOR_SEARCH"
+             "limit visible" 0
+             "Use default text" 1
+             "exact text" 1
+             font "gui/fonts/metronbook"
+             {
+              ScriptParamsClass {
+               Binding_Name "SearchBarData"
+               Two_Way_Binding 1
+              }
+             }
+            }
+           }
+          }
+          PanelWidgetClass SearchFavoriteTabPanel {
+           ignorepointer 1
+           color 0.1176 0.1176 0.1176 1
+           position 0 34
+           size 1 44
+           halign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 1
+           style rover_sim_colorable
+           {
+            ButtonWidgetClass FavoritesTabButton {
+             color 0.2941 0.4667 0.7451 1
+             size 1 22
+             halign center_ref
+             hexactpos 1
+             vexactpos 1
+             hexactsize 0
+             vexactsize 1
+             scriptclass "ViewBinding"
+             style Default
+             font "gui/fonts/etelkatextpro"
+             "text color" 0.7451 0.7451 0.7451 1
+             switch toggle
+             {
+              TextWidgetClass FavoritesText {
+               visible 1
+               inheritalpha 0
+               ignorepointer 1
+               position 0 -1
+               size 1 14
+               halign center_ref
+               valign center_ref
+               hexactpos 1
+               vexactpos 1
+               hexactsize 0
+               vexactsize 1
+               text "Filter Favorites"
+               font "gui/fonts/sdf_MetronLight24"
+               "exact text" 0
+               "size to text h" 0
+               "size to text v" 0
+               "text halign" center
+               "text valign" center
+              }
+             }
+             {
+              ScriptParamsClass {
+               Binding_Name "FavoritesToggle"
+               Two_Way_Binding 1
+              }
+             }
+            }
+            PanelWidgetClass LeftbarCategoryPanel {
+             ignorepointer 1
+             color 0.1176 0.1176 0.1176 1
+             position 0 22
+             size 1 22
+             hexactpos 1
+             vexactpos 1
+             hexactsize 0
+             vexactsize 1
+             style rover_sim_colorable
+             {
+              ButtonWidgetClass LeftbarCategoryStatic {
+               color 0.7529 0.3686 0.3255 1
+               size 0.5 1
+               halign right_ref
+               valign center_ref
+               hexactpos 1
+               vexactpos 1
+               hexactsize 0
+               vexactsize 0
+               scaled 1
+               scriptclass "ViewBinding"
+               style Default
+               "disabled text color" 1 1 1 0.9961
+               switch toggle
+               {
+                TextWidgetClass StaticText {
+                 visible 1
+                 ignorepointer 1
+                 position 0 -1
+                 size 1 14
+                 halign center_ref
+                 valign center_ref
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 0
+                 vexactsize 1
+                 text "Static"
+                 font "gui/fonts/sdf_MetronLight24"
+                 "exact text" 0
+                 "text halign" center
+                 "text valign" center
+                }
+               }
+               {
+                ScriptParamsClass {
+                 Binding_Name "CategoryStatic"
+                 Two_Way_Binding 1
+                }
+               }
+              }
+              ButtonWidgetClass LeftbarCategoryConfig {
+               color 0.1176 0.1176 0.1176 1
+               size 0.5 1
+               valign center_ref
+               hexactpos 1
+               vexactpos 1
+               hexactsize 0
+               vexactsize 0
+               scriptclass "ViewBinding"
+               style Default
+               font "gui/fonts/etelkatextpro"
+               "text color" 0.7451 0.7451 0.7451 1
+               switch normal
+               {
+                TextWidgetClass ConfigsText {
+                 visible 1
+                 ignorepointer 1
+                 position 0 -1
+                 size 1 14
+                 halign center_ref
+                 valign center_ref
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 0
+                 vexactsize 1
+                 text "Configs"
+                 font "gui/fonts/sdf_MetronLight24"
+                 "exact text" 0
+                 "size to text h" 0
+                 "size to text v" 0
+                 "text halign" center
+                 "text valign" center
+                }
+               }
+               {
+                ScriptParamsClass {
+                 Binding_Name "CategoryConfig"
+                 Two_Way_Binding 1
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+          ScrollWidgetClass LeftbarScroll {
+           clipchildren 1
+           ignorepointer 0
+           color 0.3137 0.3137 0.3137 1
+           position 0 0
+           size 1 0.942
+           halign center_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 0
+           vexactsize 0
+           scriptclass ""
+           style blank
+           "next left" ""
+           "next right" ""
+           "Scrollbar V" 1
+           "Scrollbar V Left" 1
+           {
+            WrapSpacerWidgetClass LeftbarPlacementsConfig {
+             disabled 0
+             clipchildren 1
+             ignorepointer 0
+             position 0 0
+             size 1 1
+             halign center_ref
+             hexactpos 0
+             vexactpos 0
+             hexactsize 0
+             vexactsize 0
+             scriptclass "ViewBinding"
+             Padding 0
+             Margin 0
+             "Size To Content V" 1
+             content_halign center
+             content_valign center
+             {
+              ScriptParamsClass {
+               Binding_Name "LeftbarSpacerConfig"
+              }
+             }
+            }
+            WrapSpacerWidgetClass LeftbarPlacementsStatic {
+             visible 0
+             disabled 0
+             clipchildren 1
+             ignorepointer 0
+             position 0 0
+             size 1 1
+             halign center_ref
+             hexactpos 0
+             vexactpos 0
+             hexactsize 0
+             vexactsize 0
+             scriptclass "ViewBinding"
+             Padding 0
+             Margin 0
+             "Size To Content V" 1
+             content_halign center
+             content_valign center
+             {
+              ScriptParamsClass {
+               Binding_Name "LeftbarSpacerStatic"
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+      PanelWidgetClass LeftbarCollapsePanel {
+       visible 1
+       ignorepointer 1
+       position 0 0
+       size 0.075 1
+       hexactpos 0
+       vexactpos 0
+       hexactsize 0
+       vexactsize 0
+       priority 1
+       {
+        ButtonWidgetClass LeftbarHide {
+         visible 1
+         clipchildren 1
+         color 0.0196 0.0196 0.0196 0.7843
+         size 1 0.04
+         halign right_ref
+         valign bottom_ref
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+         scriptclass "ViewBinding"
+         style DayZDefaultButtonNoBorder
+         switch toggle
+         {
+          ImageWidgetClass LeftbarHideIcon {
+           ignorepointer 1
+           position 0 0
+           size 1 1
+           hexactpos 0
+           vexactpos 0
+           hexactsize 0
+           vexactsize 0
+           image0 "set:dayz_gui image:arrow_left"
+           imageTexture "{60621763B985C925}dta/gui/gui/imagesets/dayz_gui@2x.edds"
+           mode blend
+           "src alpha" 1
+          }
+         }
+         {
+          ScriptParamsClass {
+           Relay_Command "LeftbarHideExecute"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+    WrapSpacerWidgetClass RightbarWrapper {
+     visible 1
+     clipchildren 0
+     ignorepointer 0
+     position 0 0.055
+     size 310 0.93
+     halign right_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 1
+     vexactsize 0
+     style Colorable
+     Padding 0
+     Margin 0
+     content_halign right
+     {
+      PanelWidgetClass RightbarFrame {
+       visible 1
+       disabled 0
+       ignorepointer 0
+       keepsafezone 1
+       color 0.098 0.098 0.098 0.7843
+       size 0.92 1
+       halign center_ref
+       valign bottom_ref
+       hexactpos 0
+       vexactpos 0
+       hexactsize 0
+       vexactsize 0
+       priority 1
+       style rover_sim_colorable
+       {
+        PanelWidgetClass TabPanel {
+         ignorepointer 1
+         color 0.1176 0.1176 0.1176 1
+         position 0 34
+         size 1 22
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 1
+         style rover_sim_colorable
+         {
+          ButtonWidgetClass DeletionsTabButton {
+           color 0.1176 0.1176 0.1176 1
+           position 0 0
+           size 0.5 1
+           halign right_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           scriptclass "ViewBinding"
+           style Default
+           font "gui/fonts/etelkatextpro"
+           "text color" 0.7451 0.7451 0.7451 1
+           switch normal
+           {
+            TextWidgetClass DeletionsText {
+             visible 1
+             ignorepointer 1
+             position 0 -1
+             size 1 14
+             halign center_ref
+             valign center_ref
+             hexactpos 1
+             vexactpos 1
+             hexactsize 0
+             vexactsize 1
+             text "#STR_EDITOR_DELETIONS"
+             font "gui/fonts/sdf_MetronLight24"
+             "exact text" 0
+             "size to text h" 0
+             "size to text v" 0
+             "text halign" center
+             "text valign" center
+            }
+           }
+           {
+            ScriptParamsClass {
+             Binding_Name "CategoryDeletions"
+             Two_Way_Binding 1
+            }
+           }
+          }
+          ButtonWidgetClass PlacementsTabButton {
+           color 0.7529 0.3686 0.3255 1
+           position 0 0
+           size 0.5 1
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           scaled 1
+           scriptclass "ViewBinding"
+           style Default
+           "disabled text color" 1 1 1 0.9961
+           switch toggle
+           {
+            TextWidgetClass PlacementsText {
+             visible 1
+             ignorepointer 1
+             position 0 -1
+             size 1 14
+             halign center_ref
+             valign center_ref
+             hexactpos 1
+             vexactpos 1
+             hexactsize 0
+             vexactsize 1
+             text "#STR_EDITOR_PLACEMENTS"
+             font "gui/fonts/sdf_MetronLight24"
+             "text halign" center
+             "text valign" center
+            }
+           }
+           {
+            ScriptParamsClass {
+             Binding_Name "CategoryPlacements"
+             Two_Way_Binding 1
+            }
+           }
+          }
+         }
+        }
+        ScrollWidgetClass RightbarScroll {
+         visible 1
+         clipchildren 1
+         ignorepointer 0
+         keepsafezone 0
+         color 0.3529 0.3529 0.3529 1
+         position 0 56
+         size 1 947
+         halign center_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 1
+         style blank
+         "Scrollbar V" 1
+         {
+          WrapSpacerWidgetClass RightbarPlacementsList {
+           visible 1
+           ignorepointer 0
+           keepsafezone 0
+           size 1 1
+           halign center_ref
+           valign center_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 0
+           vexactsize 0
+           scriptclass "ViewBinding"
+           style Colorable
+           Padding 0
+           Margin 0
+           "Size To Content V" 1
+           content_halign right
+           {
+            ScriptParamsClass {
+             Binding_Name "RightbarPlacedData"
+             Two_Way_Binding 1
+            }
+           }
+          }
+          WrapSpacerWidgetClass RightbarDeletionsList {
+           visible 0
+           ignorepointer 0
+           keepsafezone 0
+           position 0 0
+           size 1 1
+           halign center_ref
+           valign center_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 0
+           vexactsize 0
+           scriptclass "ViewBinding"
+           style Colorable
+           Padding 0
+           Margin 0
+           "Size To Content V" 1
+           content_halign right
+           {
+            ScriptParamsClass {
+             Binding_Name "RightbarDeletionData"
+             Two_Way_Binding 1
+            }
+           }
+          }
+         }
+        }
+        PanelWidgetClass PlacedSearchPanel {
+         visible 1
+         ignorepointer 1
+         color 0.0392 0.0392 0.0392 1
+         position 0 0
+         size 1 34
+         halign center_ref
+         hexactpos 0
+         vexactpos 1
+         hexactsize 0
+         vexactsize 1
+         style rover_sim_colorable
+         {
+          ButtonWidgetClass PlacedSearchIconButton {
+           visible 1
+           disabled 1
+           ignorepointer 0
+           color 0.7529 0.3686 0.3255 1
+           size 32 32
+           halign right_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           scriptclass "ViewBinding"
+           style Default
+           "no focus" 1
+           {
+            ImageWidgetClass PlaceDeleteSearchBarIcon {
+             ignorepointer 1
+             position 0 0
+             size 1 1
+             halign center_ref
+             valign center_ref
+             hexactpos 0
+             vexactpos 0
+             hexactsize 0
+             vexactsize 0
+             scriptclass "ViewBinding"
+             image0 ""
+             mode blend
+             "src alpha" 1
+             "clamp mode" clamp
+             filter 1
+             {
+              ScriptParamsClass {
+               Binding_Name "PlacedSearchBarIcon"
+              }
+             }
+            }
+           }
+           {
+            ScriptParamsClass {
+             Relay_Command "OnSearchPlacedButtonPress"
+            }
+           }
+          }
+          EditBoxWidgetClass PlacedSearchEditbox {
+           visible 1
+           color 0.6353 0.6353 0.6353 1
+           position 32 0
+           size 0.831 1
+           halign right_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           scriptclass "ViewBinding"
+           style Default
+           text "#STR_EDITOR_SEARCH"
+           "limit visible" 0
+           "Use default text" 1
+           "exact text" 1
+           font "gui/fonts/metronbook"
+           {
+            ScriptParamsClass {
+             Binding_Name "PlacedSearchBarData"
+             Two_Way_Binding 1
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+      PanelWidgetClass RightbarCollapsePanel {
+       clipchildren 1
+       ignorepointer 1
+       position 0 0
+       size 0.075 1
+       hexactpos 0
+       vexactpos 0
+       hexactsize 0
+       vexactsize 0
+       priority 1
+       {
+        ButtonWidgetClass RightbarHide {
+         clipchildren 1
+         color 0.0196 0.0196 0.0196 0.7843
+         size 1 0.04
+         valign bottom_ref
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+         scriptclass "ViewBinding"
+         style DayZDefaultButtonNoBorder
+         switch toggle
+         {
+          ImageWidgetClass RightbarHideIcon {
+           visible 1
+           clipchildren 0
+           ignorepointer 1
+           position 0 0
+           size 1 1
+           halign center_ref
+           valign center_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 0
+           vexactsize 0
+           scaled 1
+           image0 "set:dayz_gui image:arrow_right"
+           imageTexture ""
+           mode blend
+           "src alpha" 1
+           "flip u" 0
+           "flip v" 0
+           nocache 1
+           pivot 0 0
+          }
+         }
+         {
+          ScriptParamsClass {
+           Relay_Command "RightbarHideExecute"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+    FrameWidgetClass ToolbarFrame {
+     visible 1
+     clipchildren 0
+     ignorepointer 1
+     position 0 0
+     size 1 0.054
+     halign center_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     priority 5
+     scriptclass "ViewBinding"
+     {
+      ScriptParamsClass {
+       Binding_Name "EditorHudToolbarView"
+      }
+     }
+    }
+    PanelWidgetClass InfobarFrame {
+     clipchildren 1
+     ignorepointer 1
+     color 0.0588 0.0588 0.0588 1
+     position 0 0
+     size 1 18
+     halign right_ref
+     valign bottom_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 1
+     scaled 1
+     priority 1
+     style rover_sim_colorable
+     {
+      WrapSpacerWidgetClass InfobarWrapper {
+       clipchildren 1
+       ignorepointer 1
+       position 0 1
+       size 1 18
+       halign right_ref
+       valign center_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 1
+       Padding 0
+       Margin 0
+       "Size To Content H" 1
+       content_halign right
+       content_valign bottom
+       {
+        FrameWidgetClass NotificationFrame {
+         visible 1
+         ignorepointer 1
+         position 0 0.03
+         size 1 0.06
+         halign center_ref
+         hexactpos 1
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+        }
+        FrameWidgetClass CameraTextVectorSpacer {
+         ignorepointer 1
+         position 0 0
+         size 4 18
+         hexactpos 0
+         vexactpos 0
+         hexactsize 1
+         vexactsize 1
+        }
+        FrameWidgetClass InfobarCamPosFrame {
+         visible 1
+         ignorepointer 1
+         position 0 0
+         size 0.147 18
+         valign center_ref
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 1
+         {
+          WrapSpacerWidgetClass InfoBarVectorWrapSpacer {
+           clipchildren 0
+           ignorepointer 1
+           position -2 1.5
+           size 1 16
+           halign right_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 1
+           style Empty
+           Margin 0
+           {
+            PanelWidgetClass InfoBarCam_X_Main {
+             ignorepointer 1
+             color 1 1 1 0.9412
+             size 0.32 1
+             valign center_ref
+             hexactpos 0
+             vexactpos 0
+             hexactsize 0
+             vexactsize 0
+             style blank
+             {
+              PanelWidgetClass InfoBar_X_Background {
+               clipchildren 1
+               ignorepointer 1
+               color 0.7647 0.1804 0.102 1
+               position 1 0
+               size 16 14
+               valign center_ref
+               hexactpos 1
+               vexactpos 1
+               hexactsize 1
+               vexactsize 1
+               style rover_sim_colorable
+               {
+                TextWidgetClass InfoBar_X_Label {
+                 ignorepointer 1
+                 position 0 0
+                 size 16 16
+                 halign right_ref
+                 valign center_ref
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 text "X"
+                 "text halign" center
+                 "text valign" center
+                }
+               }
+              }
+              EditBoxWidgetClass InfoBar_X_Value {
+               inheritalpha 0
+               position -2 -1
+               size 0.8 16
+               halign right_ref
+               valign center_ref
+               hexactpos 1
+               vexactpos 1
+               hexactsize 0
+               vexactsize 1
+               scriptclass "ViewBinding"
+               style ServerBrowser
+               "limit visible" 0
+               {
+                ScriptParamsClass {
+                 Binding_Name "cam_x"
+                 Two_Way_Binding 1
+                }
+               }
+              }
+             }
+            }
+            FrameWidgetClass x_y_spacer {
+             ignorepointer 1
+             position 0 0
+             size 0 0.9
+             valign center_ref
+             hexactpos 0
+             vexactpos 0
+             hexactsize 0
+             vexactsize 0
+            }
+            PanelWidgetClass InfoBarCam_Y_Main {
+             ignorepointer 1
+             color 1 1 1 0.9412
+             position 0 0
+             size 0.32 1
+             valign center_ref
+             hexactpos 0
+             vexactpos 0
+             hexactsize 0
+             vexactsize 0
+             style blank
+             {
+              PanelWidgetClass InfoBar_Y_Background {
+               clipchildren 1
+               ignorepointer 1
+               color 0.6157 0.8157 0.2196 1
+               position 1 0
+               size 16 14
+               valign center_ref
+               hexactpos 1
+               vexactpos 1
+               hexactsize 1
+               vexactsize 1
+               style rover_sim_colorable
+               {
+                TextWidgetClass InfoBar_Y_Label {
+                 ignorepointer 1
+                 position 1 0
+                 size 16 16
+                 halign right_ref
+                 valign center_ref
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 text "Y"
+                 "text halign" center
+                 "text valign" center
+                }
+               }
+              }
+              EditBoxWidgetClass InfoBar_Y_Value {
+               inheritalpha 0
+               position -2 -1
+               size 0.8 16
+               halign right_ref
+               valign center_ref
+               hexactpos 1
+               vexactpos 1
+               hexactsize 0
+               vexactsize 1
+               scriptclass "ViewBinding"
+               style ServerBrowser
+               "limit visible" 0
+               {
+                ScriptParamsClass {
+                 Binding_Name "cam_y"
+                 Two_Way_Binding 1
+                }
+               }
+              }
+             }
+            }
+            FrameWidgetClass y_z_spacer {
+             ignorepointer 1
+             size 0 0.9
+             valign center_ref
+             hexactpos 0
+             vexactpos 0
+             hexactsize 0
+             vexactsize 0
+            }
+            PanelWidgetClass InfoBarCam_Z_Main {
+             ignorepointer 1
+             color 1 1 1 0.9412
+             position 0 0
+             size 0.32 1
+             valign center_ref
+             hexactpos 0
+             vexactpos 0
+             hexactsize 0
+             vexactsize 0
+             style blank
+             {
+              PanelWidgetClass InfoBar_Z_Background {
+               clipchildren 1
+               ignorepointer 1
+               color 0.2588 0.4824 0.9176 1
+               position 1 0
+               size 16 14
+               valign center_ref
+               hexactpos 1
+               vexactpos 1
+               hexactsize 1
+               vexactsize 1
+               style rover_sim_colorable
+               {
+                TextWidgetClass InfoBar_Z_Label {
+                 ignorepointer 1
+                 position 0 0
+                 size 16 17
+                 halign right_ref
+                 valign center_ref
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 text "Z"
+                 "text halign" center
+                 "text valign" center
+                }
+               }
+              }
+              EditBoxWidgetClass InfoBar_Z_Value {
+               inheritalpha 0
+               position -1 -1
+               size 0.8 16
+               halign right_ref
+               valign center_ref
+               hexactpos 1
+               vexactpos 1
+               hexactsize 0
+               vexactsize 1
+               scriptclass "ViewBinding"
+               style ServerBrowser
+               "limit visible" 0
+               {
+                ScriptParamsClass {
+                 Binding_Name "cam_z"
+                 Two_Way_Binding 1
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+        FrameWidgetClass InfobarCameraPositionFrame {
+         ignorepointer 1
+         position 0 0
+         size 0.1 16
+         halign center_ref
+         valign center_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 1
+         {
+          TextWidgetClass InfobarCameraPositionText {
+           clipchildren 1
+           ignorepointer 1
+           position 0 0
+           size 1 19
+           halign center_ref
+           valign center_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 0
+           vexactsize 1
+           text "#STR_EDITOR_CAMERA_POSITION"
+           font "gui/fonts/etelkatextpro"
+           "text offset" -3 0
+           "exact text" 0
+           "size to text h" 0
+           "size to text v" 0
+           "text halign" right
+           "text valign" center
+          }
+         }
+        }
+        FrameWidgetClass PrecisionFrame {
+         ignorepointer 1
+         size 0.124 19
+         valign center_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 1
+         {
+          TextWidgetClass PrecisionText {
+           ignorepointer 1
+           position 0 0
+           size 1 19
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 1
+           text "Precision"
+           font "gui/fonts/etelkatextpro"
+           "text offset" -35 1
+           "exact text" 0
+           "size to text h" 0
+           "size to text v" 0
+           "text halign" right
+           "text valign" center
+          }
+          EditBoxWidgetClass PrecisionEditbox {
+           position 0 0
+           size 30 14
+           halign right_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           scriptclass "ViewBinding"
+           style ServerBrowser
+           text "0.05"
+           font "gui/fonts/sdf_MetronLight72"
+           {
+            ScriptParamsClass {
+             Binding_Name "PrecisionLevel"
+             Two_Way_Binding 1
+            }
+           }
+          }
+         }
+        }
+        FrameWidgetClass CinematicCameraFrame {
+         visible 1
+         ignorepointer 1
+         position 0 0
+         size 20 18
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         scriptclass ""
+         {
+          ButtonWidgetClass CinematicCameraButton {
+           size 18 18
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           scriptclass "ViewBinding"
+           {
+            ScriptParamsClass {
+             Relay_Command "CameraTrackToggleExecute"
+            }
+           }
+          }
+          ImageWidgetClass CinematicCameraIcon {
+           ignorepointer 1
+           position -4 0
+           size 25 23
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           image0 "set:dayz_editor_gui image:camera"
+           mode additive
+           "src alpha" 0
+           "flip u" 0
+           "flip v" 0
+           filter 1
+          }
+         }
+        }
+        WrapSpacerWidgetClass ObjectHoverSelectWrapper {
+         visible 1
+         clipchildren 0
+         ignorepointer 1
+         position 0 0
+         size 0.25 18
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 1
+         {
+          TextWidgetClass ObjectHoverSelectText {
+           clipchildren 1
+           ignorepointer 1
+           position 0 0
+           size 0 19
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 1
+           text "#STR_EDITOR_OBJECT "
+           font "gui/fonts/etelkatextpro"
+           "size to text h" 1
+           "size to text v" 0
+           "text valign" center
+          }
+          TextWidgetClass ObjectHoverSelectObjectReadout {
+           clipchildren 1
+           ignorepointer 1
+           size 0 19
+           halign right_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 1
+           scriptclass "ViewBinding"
+           font "gui/fonts/etelkatextpro"
+           "size to text h" 1
+           "size to text v" 0
+           "text valign" center
+           {
+            ScriptParamsClass {
+             Binding_Name "ObjectReadoutName"
+            }
+           }
+          }
+         }
+        }
+        WrapSpacerWidgetClass VersionFrame {
+         ignorepointer 1
+         size 0.16 18
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 1
+         {
+          TextWidgetClass VersionText {
+           ignorepointer 1
+           size 0.16 18
+           valign center_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 0
+           vexactsize 1
+           scriptclass ""
+           text "#STR_EDITOR_VERSION "
+           font "gui/fonts/etelkatextpro"
+           "bold text" 1
+           "size to text h" 1
+           "size to text v" 1
+           "text valign" center
+          }
+          TextWidgetClass VersionNumber {
+           ignorepointer 1
+           position 0 0
+           size 0.18 18
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 1
+           scriptclass "ViewBinding"
+           font "gui/fonts/etelkatextpro"
+           "bold text" 1
+           "size to text h" 1
+           "size to text v" 0
+           "text valign" center
+           {
+            ScriptParamsClass {
+             Binding_Name "Version"
+            }
+           }
+          }
+         }
+        }
+        WrapSpacerWidgetClass CurrentFileWrapper {
+         ignorepointer 1
+         size 0.2 18
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 1
+         {
+          TextWidgetClass MenuCurrentFileNameCaption {
+           ignorepointer 1
+           position 0 0
+           size 100 1
+           valign center_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 1
+           vexactsize 0
+           text "#STR_EDITOR_CURRENT_FILE "
+           font "gui/fonts/etelkatextpro"
+           "exact text" 0
+           "size to text h" 1
+           "size to text v" 0
+           "text halign" right
+           "text valign" center
+          }
+          TextWidgetClass MenuCurrentFileNameText {
+           clipchildren 1
+           ignorepointer 1
+           size 0.11 1
+           halign right_ref
+           valign center_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 0
+           vexactsize 0
+           scriptclass "ViewBinding"
+           style None
+           font "gui/fonts/etelkatextpro"
+           "exact text" 0
+           "size to text h" 1
+           "size to text v" 0
+           "text valign" center
+           {
+            ScriptParamsClass {
+             Binding_Name "m_Editor.EditorSaveFile"
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+    FrameWidgetClass LoggerFrame {
+     visible 1
+     ignorepointer 1
+     position 290 21
+     size 425 230
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     {
+      ScrollWidgetClass LoggerScroll {
+       ignorepointer 1
+       size 1 1
+       halign center_ref
+       valign center_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       style blank
+       {
+        WrapSpacerWidgetClass LoggerSpacer {
+         ignorepointer 1
+         size 425 10
+         halign center_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         scriptclass "ViewBinding"
+         Padding 0
+         Margin 0
+         "Size To Content V" 1
+         content_valign bottom
+         {
+          ScriptParamsClass {
+           Binding_Name "EditorLogEntries"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+    WrapSpacerWidgetClass CameraTrackWrapper {
+     visible 0
+     ignorepointer 1
+     color 0.0196 0.0196 0.0196 0.7843
+     position 285 443
+     size 0.235 0
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     style Colorable
+     Padding 1
+     Margin 1
+     "Size To Content V" 1
+     {
+      PanelWidgetClass CameraTrackPanel {
+       ignorepointer 1
+       color 0.0784 0.0784 0.0784 1
+       position 0 0
+       size 1 25
+       halign center_ref
+       valign bottom_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 1
+       style rover_sim_colorable
+       {
+        TextWidgetClass CameraTrackPanelText {
+         ignorepointer 1
+         size 1 1.15
+         halign center_ref
+         valign center_ref
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+         text "#STR_EDITOR_CINEMATIC_CAMERA"
+         font "gui/fonts/etelkatextpro"
+         "size to text v" 0
+         "text halign" center
+         "text valign" center
+        }
+        PanelWidgetClass CameraTrackMinimizePanel {
+         ignorepointer 1
+         color 0.7843 0.2941 0.2745 1
+         position 2 2
+         size 25 21
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style rover_sim_colorable
+         {
+          TextWidgetClass CameraTrackMinimizeText {
+           ignorepointer 1
+           size 1 1
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           text "-"
+           "exact text" 0
+           "text halign" center
+          }
+          ButtonWidgetClass CameraTrackMinimizeButton {
+           color 1 1 1 0.1961
+           size 1 1
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           scriptclass "ViewBinding"
+           {
+            ScriptParamsClass {
+             Relay_Command "CameraTrackToggleExecute"
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+      ScrollWidgetClass CameraNodeScrollBar {
+       ignorepointer 1
+       color 0.3137 0.3137 0.3137 1
+       position 0 0
+       size 1 350
+       halign center_ref
+       valign center_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 1
+       "Scrollbar V" 1
+       {
+        WrapSpacerWidgetClass CameraNodeList {
+         ignorepointer 1
+         size 1 1
+         halign center_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 0
+         scriptclass "ViewBinding"
+         Padding 4
+         Margin 0
+         "Size To Content V" 1
+         {
+          ScriptParamsClass {
+           Binding_Name "CameraTrackData"
+           Two_Way_Binding 1
+          }
+         }
+        }
+       }
+      }
+      PanelWidgetClass CameraTrackSliderPanel {
+       ignorepointer 1
+       color 0.0784 0.0784 0.0784 1
+       position 0 0
+       size 1 22
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 1
+       style rover_sim_colorable
+       {
+        TextWidgetClass CameraTrackSmoothingText {
+         ignorepointer 1
+         position 2 0
+         size 200 20
+         valign center_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         text "#STR_EDITOR_CINEMATIC_CAMERA_SMOOTHING"
+         "text offset" 2 0
+         "size to text h" 1
+         "text valign" center
+        }
+        SliderWidgetClass CameraTrackSmoothingSlider {
+         color 0.5882 0.5882 0.5882 0.7451
+         position 5 0
+         size 250 20
+         halign right_ref
+         valign center_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         scriptclass "ViewBinding"
+         style Slider_1px_alpha_50
+         step 0.1
+         "fill in" 1
+         "listen to input" 1
+         {
+          TextWidgetClass CameraTrackSmoothingReadout {
+           ignorepointer 1
+           size 35 16
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           scriptclass "ViewBinding"
+           text "0.05"
+           "text halign" center
+           "text valign" center
+           {
+            ScriptParamsClass {
+             Binding_Name "CameraSmoothing"
+            }
+           }
+          }
+         }
+         {
+          ScriptParamsClass {
+           Binding_Name "CameraSmoothing"
+           Two_Way_Binding 1
+          }
+         }
+        }
+       }
+      }
+      PanelWidgetClass CameraTrackButtonPanel {
+       ignorepointer 1
+       color 0.0784 0.0784 0.0784 1
+       position 0 0
+       size 1 22
+       halign center_ref
+       valign bottom_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 1
+       style rover_sim_colorable
+       {
+        ButtonWidgetClass AddNodeButton {
+         position 20 1
+         size 90 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         scriptclass "ViewBinding"
+         text "Add Node"
+         {
+          PanelWidgetClass AddButtonOutline {
+           ignorepointer 1
+           color 0.7059 0.7059 0.7059 0.9961
+           size 1 1
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           style blank
+          }
+         }
+         {
+          ScriptParamsClass {
+           Relay_Command "m_Editor.CommandManager.CameraTrackAddNode"
+          }
+         }
+        }
+        ButtonWidgetClass CameraTrackRunButton {
+         position 20 1
+         size 80 20
+         halign right_ref
+         valign bottom_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         scriptclass "ViewBinding"
+         text "Run"
+         switch toggle
+         {
+          PanelWidgetClass CameraTrackButtonOutline {
+           ignorepointer 1
+           color 0.7059 0.7059 0.7059 0.9961
+           size 1 1
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           style blank
+          }
+         }
+         {
+          ScriptParamsClass {
+           Relay_Command "m_Editor.CommandManager.CameraTrackRun"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+  MapWidgetClass EditorMapWidget {
+   visible 0
+   position 0 0
+   size 1 1
+   halign center_ref
+   valign center_ref
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+  }
+ }
+ {
+  ScriptParamsClass {
+   Debug_Logging 0
+  }
+ }
+}

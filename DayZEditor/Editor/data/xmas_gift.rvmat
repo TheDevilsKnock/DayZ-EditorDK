@@ -1,3 +1,12 @@
+////////////////////////////////////////////////////////////////////
+//DeRap: data\xmas_gift.rvmat
+//Produced from mikero's Dos Tools Dll version 9.10
+//https://mikero.bytex.digital/Downloads
+//'now' is Thu Jan 18 01:21:05 2024 : 'file' last modified on Wed Jul 12 04:28:01 2023
+////////////////////////////////////////////////////////////////////
+
+#define _ARMA_
+
 ambient[] = {1.0,1.0,1.0,1.0};
 diffuse[] = {1.0,1.0,1.0,1.0};
 forcedDiffuse[] = {0.0,0.0,0.0,0.0};

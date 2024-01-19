@@ -1,0 +1,48 @@
+{
+    "Departments": [{
+        "DepartmentName": "Developers",
+        "Sections": [{
+                "SectionName": "Creator",
+                "SectionLines": [
+                    "InclementDab"
+                ]
+            },
+            {
+                "SectionName": "Developers",
+                "SectionLines": [
+                    "InclementDab",
+                    "Gormirn",
+                    "Jacob_Mango",
+                    "ZeRoY",
+                    "Steve AKA Salutesh",
+                    "MarioE",
+                    "Suvi",
+                    "Not a Banana"
+                ]
+            },
+            {
+                "SectionName": "Testers",
+                "SectionLines": [
+                    "InclementDab",
+                    "DanceOfJesus",
+                    "Steve AKA Salutesh",
+                    "Gormirn"
+                ]
+            },
+            {
+                "SectionName": "Translators",
+                "SectionLines": [
+                    "InclementDab",
+                    "DanceOfJesus (French)",
+                    "MarioE (Spanish)",
+                    "Dubinek (Czech)",
+                    "Steve AKA Salutesh (German)",
+                    "Yuki (Russian)",
+                    ".magik34 (Polish)",
+                    "Daze (Hungarian)",
+                    "Losco Noscuito (Italian)"
+                ]
+            }
+        ]
+    }]
+}

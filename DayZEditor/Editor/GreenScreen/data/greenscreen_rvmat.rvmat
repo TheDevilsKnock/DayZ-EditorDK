@@ -1,1 +1,7 @@
-renderFlags[] = {NoZWrite}; 
+ambient[] = {0.1,0.1,0.1,0.1};
+diffuse[] = {0,0,0,0};
+forcedDiffuse[] = {1,1,1,1};
+emmisive[] = {0,0,0,0};
+specular[] = {0,0,0,0};
+specularPower = 100;
+VertexShaderID = "Glass";
