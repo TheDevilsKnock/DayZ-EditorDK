@@ -1,5 +1,10 @@
 class EditorObjectManagerModule : Managed
 {
+	// --- REFACTOR NOTICE ---
+	// This module is being updated to integrate with the new ECS architecture.
+	// The CreateObject and DeleteObject methods are now the primary bridge for
+	// creating and destroying EcsEntities alongside their legacy EditorObject wrappers.
+
 	static const ref array<string> VALID_CONFIG_PATHS = {
 		CFG_VEHICLESPATH,
 		CFG_WEAPONSPATH,
@@ -23,14 +28,14 @@ class EditorObjectManagerModule : Managed
 	protected ref EditorDeletedObjectMap m_DeletedObjects = new EditorDeletedObjectMap();
 
 	protected ref EditorDeletedObjectMap m_SelectedDeletedObjects = new EditorDeletedObjectMap();
-	
-	protected ref array<ref EditorPlaceableItem> m_PlaceableObjects = {};
+
+	protected ref array<ref EditorPlaceableItem> m_PlaceableObjects = { };
 
 	protected ref map<string, EditorPlaceableItem> m_PlaceableObjectsByType = new map<string, EditorPlaceableItem>;
 
-	protected ref array<EditorCameraTrack> m_CameraTracks = {};
+	protected ref array<EditorCameraTrack> m_CameraTracks = { };
 
-	protected ref array<EditorObject> m_SelectedObjectsOrdered = {};
+	protected ref array<EditorObject> m_SelectedObjectsOrdered = { };
 
 	// lookup table by p3d
 	protected ref map<string, ref array<EditorPlaceableItem>> m_PlaceableObjectsByP3dFile = new map<string, ref array<EditorPlaceableItem>>();
@@ -44,46 +49,54 @@ class EditorObjectManagerModule : Managed
 	{
 		// handle config objects
 		foreach (string path: VALID_CONFIG_PATHS) {
-			for (int i = 0; i < GetGame().ConfigGetChildrenCount(path); i++) {
+			for (int i = 0; i < GetGame().ConfigGetChildrenCount(path); i++)
+			{
 				string type, type_lower;
 				GetGame().ConfigGetChildName(path, i, type);
 				type_lower = type;
 				type_lower.ToLower();
 				int scope = GetGame().ConfigGetInt(path + " " + type + " scope");
-				if (scope == 0 && !GetEditor().GetSettings().ShowScopeZeroObjects) {
+				if (scope == 0 && !GetEditor().GetSettings().ShowScopeZeroObjects)
+				{
 					continue;
 				}
-				
+
 				string model = SystemPath.Format(GetGame().ConfigGetTextOut(string.Format("%1 %2 model", path, type)));
 				model.ToLower();
 				// DayZ has a difficult time supporting leading slashes
-				if (model[0] == SystemPath.SEPERATOR) {
+				if (model[0] == SystemPath.SEPERATOR)
+				{
 					model = model.Substring(1, model.Length() - 1);
 				}
-				
+
 				// bug with some military tents missing models
-				if (model && !File.GetExtension(model)) {
+				if (model && !File.GetExtension(model))
+				{
 					model += ".p3d";
 				}
-				
-				if (IsForbiddenItem(type)) {
+
+				if (IsForbiddenItem(type))
+				{
 					continue;
 				}
 
 				EditorPlaceableItem placeable_item = EditorPlaceableItem.Create(path, type, scope);
-				if (type_lower.Contains("land_") || type_lower.Contains("staticobj_")) {
+				if (type_lower.Contains("land_") || type_lower.Contains("staticobj_"))
+				{
 					placeable_item.Scope = 2;
-					placeable_item.ConsoleFriendly = 1;	
+					placeable_item.ConsoleFriendly = 1;
 				}
 
 				// Yikes
-				if (GetGame().IsKindOf(type, "Inventory_Base") || GetGame().IsKindOf(type, "Weapon_Base") || GetGame().IsKindOf(type, "DZ_LightAI") || GetGame().IsKindOf(type, "Magazine_Base")) {
+				if (GetGame().IsKindOf(type, "Inventory_Base") || GetGame().IsKindOf(type, "Weapon_Base") || GetGame().IsKindOf(type, "DZ_LightAI") || GetGame().IsKindOf(type, "Magazine_Base"))
+				{
 					placeable_item.Scope = 1;
 					placeable_item.ConsoleFriendly = 1;
 				}
-				
+
 				// bldr_ check is a hack but I cannot easily check the folder a config is defined in. not sure the best way to go about this.
-				if (model.Contains("dz/") && !type.Contains("bldr_")) {
+				if (model.Contains("dz/") && !type.Contains("bldr_"))
+				{
 					placeable_item.ConsoleFriendly = 1;
 				}
 
@@ -92,34 +105,42 @@ class EditorObjectManagerModule : Managed
 
 				// Register placeable type
 				m_PlaceableObjectsByType[placeable_item.Type] = placeable_item;
-				
+
 				// If our model exists we need to dig a little deeper
-				if (model && model != "bmp") {
+				if (model && model != "bmp")
+				{
 					string model_file = File.GetName(model);
 
 					// register into placeable p3d models
-					if (!m_PlaceableObjectsByP3dPath[model]) {
-						m_PlaceableObjectsByP3dPath[model] = {};
+					if (!m_PlaceableObjectsByP3dPath[model])
+					{
+						m_PlaceableObjectsByP3dPath[model] = { }
+						;
 					}
-					
-					if (!m_PlaceableObjectsByP3dFile[model_file]) {
-						m_PlaceableObjectsByP3dFile[model_file] = {};
-					} else continue; // quite humorously this fixes duplication bugs. 
-								
+
+					if (!m_PlaceableObjectsByP3dFile[model_file])
+					{
+						m_PlaceableObjectsByP3dFile[model_file] = { }
+						;
+					}
+					else continue; // quite humorously this fixes duplication bugs. 
+
 					// dont add p3ds of AI models. crashes		
-					if (GetGame().IsKindOf(placeable_item.Type, "DZ_LightAI")) {
+					if (GetGame().IsKindOf(placeable_item.Type, "DZ_LightAI"))
+					{
 						continue;
 					}
-					
+
 					m_PlaceableObjectsByP3dPath[model].Insert(placeable_item);
 					m_PlaceableObjectsByP3dFile[model_file].Insert(placeable_item);
-					
+
 					// Add static variant of all config items
 					EditorPlaceableItem placeable_item_static_variant = EditorPlaceableItem.Create(SystemPath.Format(model));
-					if (ValidatePath(model)) {
+					if (ValidatePath(model))
+					{
 						placeable_item_static_variant.ConsoleFriendly = 1;
 					}
-					
+
 					m_PlaceableObjectsByP3dPath[model].Insert(placeable_item_static_variant);
 					m_PlaceableObjectsByP3dFile[model_file].Insert(placeable_item_static_variant);
 					m_PlaceableObjects.Insert(placeable_item_static_variant);
@@ -133,21 +154,26 @@ class EditorObjectManagerModule : Managed
 			array<string> p3d_files = Directory.EnumerateFiles(model_path, "*.p3d");
 			foreach (string p3d_file_unformat: p3d_files) {
 				string p3d_file = p3d_file_unformat;
-				p3d_file.ToLower();	
+				p3d_file.ToLower();
 				string p3d_file_name = File.GetName(p3d_file);
-				
+
 				EditorPlaceableItem placeable_item_p3d = EditorPlaceableItem.Create(p3d_file);
 				m_PlaceableObjects.Insert(placeable_item_p3d);
 
-				if (!m_PlaceableObjectsByP3dPath[p3d_file]) {
-					m_PlaceableObjectsByP3dPath[p3d_file] = {};
+				if (!m_PlaceableObjectsByP3dPath[p3d_file])
+				{
+					m_PlaceableObjectsByP3dPath[p3d_file] = { }
+					;
 				}
-				
-				if (!m_PlaceableObjectsByP3dFile[p3d_file_name]) {
-					m_PlaceableObjectsByP3dFile[p3d_file_name] = {};
+
+				if (!m_PlaceableObjectsByP3dFile[p3d_file_name])
+				{
+					m_PlaceableObjectsByP3dFile[p3d_file_name] = { }
+					;
 				}
-				
-				if (ValidatePath(p3d_file_unformat)) {
+
+				if (ValidatePath(p3d_file_unformat))
+				{
 					placeable_item_p3d.ConsoleFriendly = 1;
 				}
 
@@ -162,7 +188,8 @@ class EditorObjectManagerModule : Managed
 		m_PlaceableObjects.Insert(EditorPlaceableItem.Create(NetworkParticleBase, false));
 
 		//	Experimental lights
-		if (GetEditor().GetSettings().UseExperimentalLights) {
+		if (GetEditor().GetSettings().UseExperimentalLights)
+		{
 			m_PlaceableObjects.Insert(EditorPlaceableItem.Create(AnniversaryMainLight));
 			m_PlaceableObjects.Insert(EditorPlaceableItem.Create(BlowtorchLight));
 			m_PlaceableObjects.Insert(EditorPlaceableItem.Create(BonfireLight));
@@ -220,15 +247,15 @@ class EditorObjectManagerModule : Managed
 		"DZ/plants","DZ/plants_bliss", "DZ/plants_sakhal",
 		"DZ/rocks", "DZ/rocks_bliss", "DZ/rocks_sakhal",
 	};
-		
+
 	static bool ValidatePath(string path)
-	{		
+	{
 		foreach (string p: VALID_PATHS)
 		{
 			if (path.Contains(p))
 				return true;
 		}
-		
+
 		return false;
 	}
 
@@ -241,8 +268,8 @@ class EditorObjectManagerModule : Managed
 
 		// weak ref
 		m_CameraTracks.Insert(camera_track);
-		m_WorldObjectIndex.Insert(camera_track.GetWorldObject().GetID(), camera_track);	
-		
+		m_WorldObjectIndex.Insert(camera_track.GetWorldObject().GetID(), camera_track);
+
 		EditorEvents.ObjectCreated(this, camera_track);
 
 		GetEditor().GetStatistics().EditorPlacedCameraTracks++;
@@ -251,7 +278,8 @@ class EditorObjectManagerModule : Managed
 
 	bool DeleteCameraTrack(EditorCameraTrack camera_track)
 	{
-		if (!camera_track) {
+		if (!camera_track)
+		{
 			return false;
 		}
 
@@ -265,7 +293,7 @@ class EditorObjectManagerModule : Managed
 		m_EditorObjectRefs.Remove(camera_track.GetID());
 		return true;
 	}
-	
+
 	int GetCameraTrackIndex(notnull EditorCameraTrack camera_track)
 	{
 		return m_CameraTracks.Find(camera_track);
@@ -274,7 +302,8 @@ class EditorObjectManagerModule : Managed
 	void SetCameraTrackIndex(notnull EditorCameraTrack camera_track, int index)
 	{
 		int old_index = m_CameraTracks.Find(camera_track);
-		if (old_index == index || old_index == -1) {
+		if (old_index == index || old_index == -1)
+		{
 			return;
 		}
 
@@ -284,37 +313,97 @@ class EditorObjectManagerModule : Managed
 		// Updates list index for menu elements
 		camera_track.SetListIndex(index);
 	}
-	
+
 	array<EditorCameraTrack> GetCameraTracks()
 	{
 		return m_CameraTracks;
 	}
-		
+
+	/**
+	 * @brief Creates a single editor object from data.
+	 * MODIFIED: This is the core of the ECS refactor. It now creates an EcsEntity and populates
+	 * it with components before creating the legacy EditorObject wrapper.
+	 */
 	EditorObject CreateObject(notnull EditorObjectData editor_object_data)
 	{
-		EditorObject editor_object = new EditorObject(editor_object_data);
-		if (!editor_object.GetWorldObject()) {
+		// --- 1. Create the physical game object ---
+		Object worldObject = GetGame().CreateObjectEx(editor_object_data.Type, editor_object_data.Position, ECE_CREATEPHYSICS | ECE_LOCAL);
+		if (!worldObject)
+		{
+			Error("Failed to create world object: " + editor_object_data.Type);
 			return null;
 		}
-		
-		// strong ref
-		m_EditorObjectRefs[editor_object.GetID()] = editor_object;
 
+		worldObject.SetOrientation(editor_object_data.Orientation);
+		worldObject.SetScale(editor_object_data.Scale);
+
+		// Handle attachments (logic moved from old EditorObject constructor)
+		EntityAI entity = EntityAI.Cast(worldObject);
+		if (entity)
+		{
+			foreach (int slot_id, EditorObjectData attachment: editor_object_data.AttachmentMap) {
+				entity.GetInventory().CreateAttachmentEx(attachment.Type, slot_id);
+			}
+		}
+
+		// --- 2. ECS INTEGRATION: Create Entity and Components ---
+		ECS_World ecs = GetECS();
+		EcsEntity newEntity = ecs.CreateEntity();
+
+		ecs.AddComponent(newEntity, new TransformComponent(editor_object_data.Position, editor_object_data.Orientation, editor_object_data.Scale));
+		ecs.AddComponent(newEntity, new WorldObjectComponent(worldObject));
+		ecs.AddComponent(newEntity, new IdentifierComponent(editor_object_data.Type));
+
+		if (editor_object_data.Locked)
+		{
+			ecs.AddComponent(newEntity, new LockedComponent());
+		}
+
+		// --- 3. Create the legacy EditorObject wrapper ---
+		// Update the data payload with the created world object, as the constructor expects it.
+		editor_object_data.WorldObject = worldObject;
+		EditorObject editor_object = new EditorObject(editor_object_data, newEntity);
+
+		// If the legacy constructor failed for any reason, perform cleanup.
+		if (!editor_object.GetWorldObject())
+		{
+			ecs.DestroyEntity(newEntity);
+			GetGame().ObjectDelete(worldObject);
+			return null;
+		}
+
+		// --- 4. Legacy Management: Store the new wrapper in old data structures ---
+		m_EditorObjectRefs[editor_object.GetID()] = editor_object;
 		m_PlacedObjects.InsertEditorObject(editor_object);
 		m_WorldObjectIndex.Insert(editor_object.GetWorldObject().GetID(), editor_object);
 
-		EditorEvents.ObjectCreated(this, editor_object);		
+		EditorEvents.ObjectCreated(this, editor_object);
 		return editor_object;
 	}
 
+	/**
+	 * @brief Deletes an editor object.
+	 * MODIFIED: Now also destroys the associated EcsEntity.
+	 */
 	void DeleteObject(notnull EditorObject target)
 	{
 		EditorLog.Trace("EditorObjectManager::DeleteObject");
-				
+
+		// --- ECS INTEGRATION: Destroy the associated entity ---
+		EcsEntity entityId = target.GetEcsEntity();
+		if (entityId > 0)
+		{
+			GetECS().DestroyEntity(entityId);
+		}
+
+		// --- Legacy Management ---
 		EditorCameraTrack camera_track = EditorCameraTrack.Cast(target);
-		if (camera_track) {
+		if (camera_track)
+		{
 			m_CameraTracks.RemoveItem(camera_track);
-		} else {
+		}
+		else
+		{
 			m_PlacedObjects.RemoveEditorObject(target);
 		}
 
@@ -322,23 +411,24 @@ class EditorObjectManagerModule : Managed
 		m_SelectedObjectsOrdered.RemoveItem(target);
 		EditorEvents.ObjectDeleted(this, target);
 
-		// remove strong ref
+		// remove strong ref (this will call the ~EditorObject destructor)
 		m_EditorObjectRefs.Remove(target.GetID());
 	}
-		
+
 	// Call to select an object
 	void SelectObject(notnull EditorObject target)
 	{
-		if (target.IsSelected() || target.IsLocked()) {
+		if (target.IsSelected() || target.IsLocked())
+		{
 			return;
 		}
-		
+
 		EditorLog.Trace("EditorObjectManager::SelectObject");
 		m_SelectedObjects.InsertEditorObject(target);
 		m_SelectedObjectsOrdered.Insert(target);
 		EditorEvents.ObjectSelected(this, target);
 		target.OnSelected();
-		
+
 		float count_flt = m_SelectedObjects.Count();
 		vector diff = target.GetPosition() - m_AveragePositionOfSelection;
 		diff[0] = diff[0] / count_flt;
@@ -359,9 +449,12 @@ class EditorObjectManagerModule : Managed
 		EditorEvents.ObjectDeselected(this, target);
 		target.OnDeselected();
 
-		if (m_SelectedObjects.Count() == 0) {
+		if (m_SelectedObjects.Count() == 0)
+		{
 			m_AveragePositionOfSelection = vector.Zero;
-		} else {
+		}
+		else
+		{
 			float count_flt = m_SelectedObjects.Count();
 			vector n = (m_AveragePositionOfSelection * (count_flt + 1) - target.GetPosition());
 			n[0] = n[0] / count_flt;
@@ -376,12 +469,13 @@ class EditorObjectManagerModule : Managed
 	// When a selected object gets updated we must re-cacluate the average position
 	void RecalculateCenterOfSelectedObjects()
 	{
-		if (m_SelectedObjects.Count() == 0) {
+		if (m_SelectedObjects.Count() == 0)
+		{
 			m_AveragePositionOfSelection = vector.Zero;
 			return;
 		}
-		
-		float count_flt = m_SelectedObjects.Count();		
+
+		float count_flt = m_SelectedObjects.Count();
 		vector total_position = vector.Zero;
 		foreach (EditorObject selected_object: m_SelectedObjects) {
 			total_position = total_position + selected_object.GetPosition();
@@ -392,7 +486,7 @@ class EditorObjectManagerModule : Managed
 		total_position[2] = total_position[2] / count_flt;
 		m_AveragePositionOfSelection = total_position;
 	}
-	
+
 	// Call to toggle selection
 	void ToggleSelection(notnull EditorObject target)
 	{
@@ -406,13 +500,15 @@ class EditorObjectManagerModule : Managed
 	void ClearSelection()
 	{
 		foreach (EditorObject editor_object: m_SelectedObjects) {
-			if (editor_object) {
+			if (editor_object)
+			{
 				DeselectObject(editor_object);
 			}
 		}
 
 		foreach (EditorDeletedObject deleted_object: m_SelectedDeletedObjects) {
-			if (deleted_object) {
+			if (deleted_object)
+			{
 				DeselectHiddenObject(deleted_object);
 			}
 		}
@@ -495,10 +591,11 @@ class EditorObjectManagerModule : Managed
 
 	bool IsObjectHidden(Object object)
 	{
-		if (!object) {
+		if (!object)
+		{
 			return true; // i mean i guess its hidden /shrug
 		}
-		
+
 		return (GetDayZGame().GetSuppressedObjectManager().IsSuppressed(object));
 	}
 
@@ -559,12 +656,13 @@ class EditorObjectManagerModule : Managed
 	{
 		return m_PlaceableObjectsByP3dFile[p3d_file_name];
 	}
-	
+
 	// reverses full p3d file, mostly to overcome ItemPreviewWidgets requiring EntityAI
-	string ConvertP3dFileToPotentialObjectType(string p3d_file)	
+	string ConvertP3dFileToPotentialObjectType(string p3d_file)
 	{
 		array<EditorPlaceableItem> placeables = m_PlaceableObjectsByP3dPath[p3d_file];
-		if (placeables && placeables.Count() > 0) {
+		if (placeables && placeables.Count() > 0)
+		{
 			return placeables[0].Type;
 		}
 
@@ -577,7 +675,7 @@ class EditorObjectManagerModule : Managed
 		EditorLog.Debug(m_EditorObjectRefs.Count().ToString());
 		EditorLog.Debug(m_EditorDeletedObjectRefs.Count().ToString());
 	}
-	
+
 	static bool IsForbiddenItem(string model)
 	{
 		model.ToLower();
@@ -614,7 +712,7 @@ class EditorObjectManagerModule : Managed
 		//! Everything is fine... I hope... :pain:
 		return false;
 	}
-	
+
 	vector GetAveragePositionOfSelection()
 	{
 		return m_AveragePositionOfSelection;
