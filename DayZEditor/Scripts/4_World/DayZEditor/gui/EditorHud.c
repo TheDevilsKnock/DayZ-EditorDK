@@ -44,6 +44,8 @@ class EditorCameraMarker: ScriptView
 
 class EditorHud: ScriptView
 {
+    Widget ActiveToolProperties;
+
 	const float DEFAULT_BAR_WIDTH_PX = 380.0;
 
 	const float BAR_WIDTH_MINIMUM_PX = 100.0;
@@ -292,20 +294,8 @@ class EditorHud: ScriptView
 		LeftbarWrapper.SetScreenSize(m_EditorSettings.LeftBarPlacement, bar_height);
 		RightbarWrapper.SetScreenSize(m_EditorSettings.RightBarPlacement, bar_height);
 		
-		// Leftbar scroll size
-		float lbs_s_w, lbs_s_h;
-		float lpsbp_s_w, lpsbp_s_h, sftp_s_w, sftp_s_h;
-		LeftbarPanelSearchBarPanel.GetScreenSize(lpsbp_s_w, lpsbp_s_h);
-		SearchFavoriteTabPanel.GetScreenSize(sftp_s_w, sftp_s_h);
-		LeftbarScroll.GetScreenSize(lbs_s_w, lbs_s_h);
-		LeftbarScroll.SetScreenSize(lbs_s_w, bar_height - sftp_s_h - lpsbp_s_h);
-		
-		// Rightbar scroll size
-		float tp_s_w, tp_s_h, rpsbp_s_h, rpsbp_s_w, rbs_s_w, rbs_s_h;
-		TabPanel.GetScreenSize(tp_s_w, tp_s_h);
-		RightPanelSearchBarPanel.GetScreenSize(rpsbp_s_w, rpsbp_s_h);
-		RightbarScroll.GetScreenSize(rbs_s_w, rbs_s_h);
-		RightbarScroll.SetScreenSize(rbs_s_w, bar_height - tp_s_h - rpsbp_s_h);
+		// Calculate scrollbar heights
+		RefreshLayout();
 
 		// Too many requests. It wont work fully but ill get the rest in later
 		CinematicCameraButton.Show(true);
@@ -1101,6 +1091,58 @@ class EditorHud: ScriptView
 				
 		Symbols left_search_bar_icon = Ternary<Symbols>.If(!search_string.Length(), Symbols.MAGNIFYING_GLASS, Symbols.X);
 		left_search_bar_icon.Load(LeftSearchBarIconIcon);
+	}
+	
+	void RefreshLayout()
+    {
+        int screen_w, screen_h;
+        GetScreenSize(screen_w, screen_h);
+
+        float tb_s_w, tb_s_h;
+        ToolbarFrame.GetScreenSize(tb_s_w, tb_s_h);
+
+        float ib_s_w, ib_s_h;
+        InfobarFrame.GetScreenSize(ib_s_w, ib_s_h);
+
+        float bar_height = screen_h - ib_s_h - tb_s_h;
+        
+        // Top Elements
+        float lpsbp_s_w, lpsbp_s_h; 
+        float sftp_s_w, sftp_s_h; 
+        LeftbarPanelSearchBarPanel.GetScreenSize(lpsbp_s_w, lpsbp_s_h);
+        SearchFavoriteTabPanel.GetScreenSize(sftp_s_w, sftp_s_h);
+        
+        float atp_s_w, atp_s_h = 0.0; // Default to 0
+        
+        // Only measure if valid, visible, and actually has children
+        if (ActiveToolProperties && ActiveToolProperties.IsVisible() && ActiveToolProperties.GetChildren()) {
+            ActiveToolProperties.Update(); 
+            ActiveToolProperties.GetScreenSize(atp_s_w, atp_s_h);
+            
+            // Fallback if visible but size reported as 0 
+            if (atp_s_h == 0) {
+                Widget child = ActiveToolProperties.GetChildren();
+                while (child) {
+                    if (child.IsVisible()) atp_s_h += 32.0; 
+                    child = child.GetSibling();
+                }
+                if (atp_s_h > 0) atp_s_h += 10.0;
+            }
+        }
+
+        // Resize
+        float lbs_s_w, lbs_s_h;
+        LeftbarScroll.GetScreenSize(lbs_s_w, lbs_s_h);
+        
+        // If atp_s_h is 0 (Tool Hidden), this restores full height
+        LeftbarScroll.SetScreenSize(lbs_s_w, bar_height - sftp_s_h - lpsbp_s_h - atp_s_h);
+        
+        // Right Bar
+        float tp_s_w, tp_s_h, rpsbp_s_h, rpsbp_s_w, rbs_s_w, rbs_s_h;
+        TabPanel.GetScreenSize(tp_s_w, tp_s_h);
+        RightPanelSearchBarPanel.GetScreenSize(rpsbp_s_w, rpsbp_s_h);
+        RightbarScroll.GetScreenSize(rbs_s_w, rbs_s_h);
+        RightbarScroll.SetScreenSize(rbs_s_w, bar_height - tp_s_h - rpsbp_s_h);
 	}
 	
 	override bool OnChange(Widget w, int x, int y, bool finished)

@@ -122,6 +122,7 @@ class Editor: Managed
 	bool 										CollisionMode;
 	bool 										LightningMode;
 	bool 										GridMode;
+	bool 										LinearArrayMode;
 	bool 										CameraCollision;
 	
 	ref EditorEnvironment UserEnvironment;
@@ -1502,7 +1503,7 @@ class Editor: Managed
 		}
 		
 		bool useful_widget_under_cursor = GetWidgetUnderCursor() && GetWidgetUnderCursor().GetName() != "HudPanel" && GetWidgetUnderCursor().GetName() != "CursorIcons";		
-		if (GetCamera() && GetCamera().GetSettings() && !GetCamera().GetSettings().LegacyCamera && !useful_widget_under_cursor && !IsPlacing()) {
+		if (GetCamera() && GetCamera().GetSettings() && !GetCamera().GetSettings().LegacyCamera && !useful_widget_under_cursor && !IsPlacing() && !LinearArrayMode) {
 			float scale_change_value = 0.1 * GetCamera().GetSettings().Speed;
 			if (input.LocalValue("EditorCameraToolSpeedIncrease")) {
 				GetCamera().GetSettings().Speed += scale_change_value;

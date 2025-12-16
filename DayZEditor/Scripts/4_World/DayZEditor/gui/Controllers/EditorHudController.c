@@ -23,7 +23,7 @@ class EditorHudController: EditorControllerBase
 	ref ObservableCollection<EditorListItem> RightbarPlacedData 		= new ObservableCollection<EditorListItem>(this);
 	ref ObservableCollection<EditorListItem> RightbarDeletionData 		= new ObservableCollection<EditorListItem>(this);
 	ref ObservableCollection<EditorPlayerListItem> RightbarPlayerData 		= new ObservableCollection<EditorPlayerListItem>(this);
-	
+	ref ObservableCollection<ref ScriptView> ActiveToolProperties = new ObservableCollection<ref ScriptView>(this);
 	// Logger
 	static const int MAX_LOG_ENTRIES = 20;
 	ref ObservableCollection<ref EditorLogEntry> EditorLogEntries 			= new ObservableCollection<ref EditorLogEntry>(this);
@@ -97,6 +97,7 @@ class EditorHudController: EditorControllerBase
 		EditorLog.OnLog.Remove(OnEditorLog);
 		GetGame().GetUpdateQueue(CALL_CATEGORY_GUI).Remove(Update);
 #endif
+		delete ActiveToolProperties;
 	}
 		
 	void Update()
@@ -496,6 +497,15 @@ class EditorHudController: EditorControllerBase
 		
 	override bool OnMouseWheel(Widget w, int x, int y, int wheel)
 	{		
+		
+        if (GetEditor().LinearArrayMode) {
+            EditorLinearArrayCommand cmd = EditorLinearArrayCommand.Cast(GetEditor().CommandManager[EditorLinearArrayCommand]);
+            if (cmd) {
+                cmd.OnMouseWheel(wheel);
+                return true;
+            }
+        }
+
 		if (RecursiveGetParent(w, ScrollWidget)) {
 			if (GetEditor().IsCtrlDown()) {
 				ScrollWidget.Cast(w).VScrollStep(wheel * 10);
