@@ -258,6 +258,7 @@ class EditorObject: EditorWorldObject
 		}
 		
 		m_IsSelected = true;
+		
 		ShowBoundingBox();
 		OnObjectSelected.Invoke(this);
 	}
@@ -318,9 +319,11 @@ class EditorObject: EditorWorldObject
 		object_data.Locked = m_Data.Locked;
 		object_data.Flags = m_Data.Flags;
 		
+				
 		// Copy parameters
-		foreach (string parameter_name, SerializableParam parameter: m_Data.Parameters) {
-			object_data.Parameters[parameter_name] = parameter;
+		SerializedBuilding serial_building = SerializedBuilding.Cast(m_WorldObject);
+		if (serial_building) {
+			serial_building.Write(object_data.Parameters);
 		}
 		
 		return object_data;
@@ -553,22 +556,33 @@ class EditorObject: EditorWorldObject
 		}
 	}
 
+	protected bool m_PhysicsEnabled;
+	
 	void SetPhysicsEnabled(bool physics)
 	{
-		if (!PlayerBase.Cast(GetWorldObject())) {
-			if (GetWorldObject()) {
-				if (physics) {
-					GetWorldObject().CreateDynamicPhysics(PhxInteractionLayers.DYNAMICITEM);
-					GetWorldObject().SetDynamicPhysicsLifeTime(-1);
-					dBodySetMass(GetWorldObject(), 100);
-				} else {
-					GetWorldObject().SetDynamicPhysicsLifeTime(0.001);
-				}
-			}
-
-			//m_Data.Physics = physics;
-			OnChanged.Invoke();
+		if (PlayerBase.Cast(m_WorldObject)) {
+			return;
 		}
+		
+		if (!m_WorldObject) {
+			return;
+		}
+		
+		m_PhysicsEnabled = physics;
+		if (m_PhysicsEnabled) {
+			m_WorldObject.CreateDynamicPhysics(PhxInteractionLayers.DYNAMICITEM);
+			m_WorldObject.SetDynamicPhysicsLifeTime(-1);
+			dBodySetMass(m_WorldObject, 100);
+		} else {
+			m_WorldObject.SetDynamicPhysicsLifeTime(0.001);
+		}
+		
+		OnChanged.Invoke();
+	}
+	
+	bool IsPhysicsEnabled()
+	{
+		return m_PhysicsEnabled;
 	}
 	
 	void SetHealth(float health)
@@ -993,6 +1007,7 @@ class EditorObjectController: Managed
 		Locked = m_EditorObject.IsLocked();
 		EditorOnly = m_EditorObject.IsEditorOnly();
 		Health = m_EditorObject.GetHealth();
+		UsePhysics = m_EditorObject.IsPhysicsEnabled();
 		
 		// Yikes
 		if (m_EditorObject.GetData().Parameters["ExpansionTraderType"]) {
@@ -1026,6 +1041,7 @@ class EditorObjectController: Managed
 			}
 
 			case "Scale": {
+                if (Math.AbsFloat(Scale) <= Math.EPSILON * 2) return;
 				m_EditorObject.SetScale(Scale);
 				m_EditorObject.Update();
 				break;

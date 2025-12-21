@@ -59,9 +59,15 @@ class Plane3D: Managed
 
 class EditorObjectDragHandler: EditorDragHandler
 {
+	protected float m_InitialScale = 1.0;
+
 	override void OnDragStart(notnull EditorObject target, array<EditorObject> additional_targets = null)
 	{
 		super.OnDragStart(target, additional_targets);
+
+        if (target) {
+            m_InitialScale = target.GetScale();
+        }
 
 		if (GetGame().IsMultiplayer())
 		{
@@ -128,7 +134,7 @@ class EditorObjectDragHandler: EditorDragHandler
 		Math3D.MatrixOrthogonalize4(transform_without_scale);
 		
 		vector scale_matrix[3];
-		Math3D.ScaleMatrix(transform[0].Length(), scale_matrix);
+		Math3D.ScaleMatrix(m_InitialScale, scale_matrix);
 
 		array<Object> ignored_objects = {};
 		ignored_objects.InsertAll(all_object_instances);
@@ -140,8 +146,9 @@ class EditorObjectDragHandler: EditorDragHandler
 			interaction_layers &= PhxInteractionLayers.TERRAIN;
 		}
 		
-		Raycast cursor_raycast = cursor_ray.PerformRaycastMulti(ignored_objects, GetEditor().GetCamera().GetSettings().ViewDistance / 2, interaction_layers);
-		
+		//Raycast cursor_raycast = cursor_ray.PerformRaycastMulti(ignored_objects, GetEditor().GetCamera().GetSettings().ViewDistance / 2, interaction_layers);
+		Raycast cursor_raycast = GetEditor().GetCursorRaycastModeSafeEx(ignored_objects, GetEditor().GroundMode);
+			
 		vector cursor_pos = cursor_ray.GetPoint(10.0);
 		if (cursor_raycast) {
 			cursor_pos = cursor_raycast.Bounce.Position;

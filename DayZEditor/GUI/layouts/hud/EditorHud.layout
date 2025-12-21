@@ -2515,6 +2515,7 @@ FrameWidgetClass EditorFrame {
                }
               }
               ButtonWidgetClass CameraCollisionButton {
+               visible 0
                clipchildren 1
                color 0.149 0.153 0.161 1
                position 0 0
