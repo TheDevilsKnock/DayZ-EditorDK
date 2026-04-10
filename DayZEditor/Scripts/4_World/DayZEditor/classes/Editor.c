@@ -3473,6 +3473,24 @@ class Editor: Managed
 		}
 	}
 		
+    void StartOrbit(vector targetPosition)
+    {
+        EditorCamera_V2 cam = EditorCamera_V2.Cast(m_EditorCamera);
+        if (cam)
+        {
+            cam.StartOrbit(targetPosition);
+        }
+    }
+
+    void StopOrbit()
+    {
+        EditorCamera_V2 cam = EditorCamera_V2.Cast(m_EditorCamera);
+        if (cam)
+        {
+            cam.StopOrbit();
+        }
+    }
+		
 	vector GetAveragePositionOfSelection()
 	{
 		return m_ObjectManager.GetAveragePositionOfSelection();

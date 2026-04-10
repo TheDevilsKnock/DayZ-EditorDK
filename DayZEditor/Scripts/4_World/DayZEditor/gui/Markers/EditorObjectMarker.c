@@ -41,6 +41,21 @@ class EditorObjectMarker: EditorMarker
 				//SetHighlighted(2);
 				break;
 			}
+
+			case MouseState.MIDDLE: {
+				// Orbit Logic
+				if (!GetEditor().IsCtrlDown()) 
+				{
+					if (!m_EditorObject.IsSelected() && !GetEditor().IsShiftDown()) {
+						m_Editor.ClearSelection();
+						m_Editor.SelectObject(m_EditorObject);
+					}
+
+					m_Editor.StartOrbit(m_EditorObject.GetPosition());
+					return true;
+				}
+				break;
+			}
 		}
 
 		return super.OnMouseButtonDown(w, x, y, button);

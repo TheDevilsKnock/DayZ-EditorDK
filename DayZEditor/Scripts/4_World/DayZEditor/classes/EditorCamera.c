@@ -231,13 +231,112 @@ class EditorCamera_V2: EditorCamera
 	
 	const float CAMERA_COLLISION_RADIUS = 0.2;
 	
+    protected bool m_IsOrbiting;
+    protected vector m_OrbitPivot;
+    protected float m_OrbitSensitivity = 0.5;
+    protected float m_OrbitDistance;
+    protected float m_OrbitYaw;
+    protected float m_OrbitPitch;
+	
 	void EditorCamera_V2()
 	{		
 		Speed = m_EditorCameraSettings.Speed;
 	}
+
+    void StartOrbit(vector pivot)
+    {
+        m_IsOrbiting = true;
+        m_OrbitPivot = pivot;
+        
+        vector dir = GetPosition() - m_OrbitPivot;
+        m_OrbitDistance = dir.Length();
+        
+        // Prevent divide by zero / math errors if inside pivot
+        if (m_OrbitDistance < 0.1) m_OrbitDistance = 0.1;
+        
+        vector angles = dir.VectorToAngles();
+        m_OrbitYaw = angles[0];
+        m_OrbitPitch = angles[1];
+        
+        GetGame().GetUIManager().ShowCursor(false);
+    }
+
+    void StopOrbit()
+    {
+        m_IsOrbiting = false;
+        GetGame().GetUIManager().ShowCursor(true);
+    }
+    
+    protected vector GetOrbitPosition(float yaw, float pitch, float distance)
+    {
+        vector angles = Vector(yaw, pitch, 0);
+        return m_OrbitPivot + (angles.AnglesToVector() * distance);
+    }
+
+    protected void UpdateOrbit(float timeSlice)
+    {
+        Input orbitInput = GetGame().GetInput();
+        
+        // 1. Handle Exit
+        if (orbitInput.LocalRelease("UAZoomIn"))
+        {
+            StopOrbit();
+            return;
+        }
+
+        // 2. Process Input
+        float yawDiff = orbitInput.LocalValue("UAAimLeft") - orbitInput.LocalValue("UAAimRight");
+        float pitchDiff = orbitInput.LocalValue("UAAimDown") - orbitInput.LocalValue("UAAimUp");
+
+        m_OrbitYaw -= (yawDiff * m_OrbitSensitivity);
+        m_OrbitPitch += (pitchDiff * m_OrbitSensitivity);
+        m_OrbitPitch = Math.Clamp(m_OrbitPitch, -89.0, 89.0);
+
+        // 3. Calculate Position
+        vector nextPos = GetOrbitPosition(m_OrbitYaw, m_OrbitPitch, m_OrbitDistance);
+        
+        // 4. Handle Terrain Collision
+        if (!m_EditorCameraSettings.AllowUnderEarth)
+        {
+            float surfaceY = GetGame().SurfaceY(nextPos[0], nextPos[2]);
+            float limitY = surfaceY + GetNearPlane() * 2.0;
+
+            if (nextPos[1] < limitY)
+            {
+                float heightDiff = limitY - m_OrbitPivot[1];
+                
+                // Calculate the sine of the angle required to reach this height at this radius
+                // sin(theta) = Opposite / Hypotenuse
+                float ratio = heightDiff / m_OrbitDistance;
+
+                if (ratio >= -1.0 && ratio <= 1.0)
+                {
+                    // Valid rotation: Snap pitch to surface angle
+                    m_OrbitPitch = Math.Asin(ratio) * Math.RAD2DEG;
+                    nextPos = GetOrbitPosition(m_OrbitYaw, m_OrbitPitch, m_OrbitDistance);
+                }
+                else
+                {
+                    // Invalid rotation (Terrain is higher than the top of our orbit sphere)
+                    // We must break radius rules here to avoid going underground
+                    nextPos[1] = limitY;
+                }
+            }
+        }
+
+        // 5. Apply
+        SetPosition(nextPos);
+        LookAt(m_OrbitPivot);
+	}
 	
 	override void EOnFrame(IEntity other, float timeSlice)
 	{
+        if (m_IsOrbiting)
+        {
+            UpdateOrbit(timeSlice);
+            return;
+        }
+
 		vector transform[4];
 		GetTransform(transform);
 

@@ -164,7 +164,7 @@ class EditorObjectDragHandler: EditorDragHandler
 		vector up_dir = vector.Up;		
 		float distance_to_ground = 0;
 		if (GetEditor().MagnetMode) {
-			up_dir = cursor_raycast.Bounce.Direction;
+			up_dir = GetGame().SurfaceGetNormal(rotation_source_pos[0], rotation_source_pos[2]);	
 		}
 
 		up_dir.Normalize();
