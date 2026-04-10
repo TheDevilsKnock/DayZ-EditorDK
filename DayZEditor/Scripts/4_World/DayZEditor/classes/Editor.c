@@ -123,12 +123,14 @@ class Editor: Managed
 	bool 										LightningMode;
 	bool 										GridMode;
 	bool 										CameraCollision;
+	bool 										UnlockMode;
+	bool 										LockMode;
 	
 	ref EditorEnvironment UserEnvironment;
 	ref EditorDragHandler DragHandler;
 
 	static const int Experimental = 0;
-	static const int MinorVersionNumber = 4;
+	static const int MinorVersionNumber = 5;
 	static const int VersionNumber = 35;
 	static const string Version = string.Format("1.%1%2%3", VersionNumber, Ternary<string>.If(MinorVersionNumber, "." + MinorVersionNumber.ToString(), string.Empty), Ternary<string>.If(Experimental, "E", string.Empty));
 	static bool HasTestedVersion = false;
@@ -559,6 +561,12 @@ class Editor: Managed
 		
 		m_ControllingPlayer.DisableSimulation(false);
 		
+		vector cam_pos_ctrl = GetGame().GetCurrentCameraPosition();
+		if (!GetGame().IsMultiplayer() && m_EditorCamera) {
+			cam_pos_ctrl = m_EditorCamera.GetPosition();
+		}
+
+		
 		m_EditorCamera.SetActive(false);
 		GetGame().SelectPlayer(null, m_ControllingPlayer);
 		
@@ -575,8 +583,8 @@ class Editor: Managed
 		if (GetGame().IsMultiplayer()) {
 			ScriptRPC rpc = new ScriptRPC();
 			rpc.Write(m_Active);
-			rpc.Write(vector.Zero); // unused
-			rpc.Send(null, 39261, true);
+			rpc.Write(cam_pos_ctrl);
+			rpc.Send(null, EditorRPC.CAMERA_CONTROL, true);
 		}
 	}
 	
@@ -1138,7 +1146,7 @@ class Editor: Managed
 				}
 			}
 		}
-				
+		
 		//	left click logic
 		if (left_click_input.LocalPress()) {
 #ifdef GIZMOS_ENABLED
@@ -1155,6 +1163,28 @@ class Editor: Managed
 			if (IsPlacing()) {
 				PlaceObject();
 				return;
+			}
+			
+			if (m_ObjectUnderCursor && LockMode) {
+				EditorObject lock_object = GetEditorObject(m_ObjectUnderCursor);
+				if (lock_object && !lock_object.IsLocked()) {
+					lock_object.Lock(true);
+					return;
+				}
+			}
+			
+			if (m_ObjectUnderCursor && UnlockMode) {
+				EditorObject unlock_object = GetEditorObject(m_ObjectUnderCursor);
+				if (unlock_object && unlock_object.IsLocked()) {
+					unlock_object.Lock(false);
+					
+					if (!turbo_input.LocalValue()) {
+						ClearSelection();
+					}
+					
+					SelectObject(unlock_object);
+					return;
+				}
 			}
 			
 			if (IsCtrlDown() && m_ObjectUnderCursor && !widget_under_cursor) {
@@ -1653,8 +1683,10 @@ class Editor: Managed
 			}
 		} else {
 			ScriptRPC rpc = new ScriptRPC();
+			vector camera_control_pos = GetGame().GetCurrentCameraPosition();
 			rpc.Write(m_Active);
-			rpc.Send(null, 39261, true);
+			rpc.Write(camera_control_pos);
+			rpc.Send(null, EditorRPC.CAMERA_CONTROL, true);
 		}
 		
 		if (m_EditorHud) {
@@ -2924,6 +2956,7 @@ class Editor: Managed
 			return PlayerBase.Cast(GetGame().GetPlayer());
 		} 
 	
+		position[1] = GetGame().SurfaceY(position[0], position[2]);
 		PlayerBase player = PlayerBase.Cast(GetGame().CreatePlayer(identity, type, position, 0, string.Empty));
 		if (!player) {
 			EditorLog.Error("Failed to create new player, type %1", type);
@@ -3040,6 +3073,10 @@ class Editor: Managed
 			EditorLog.Error("Invalid Save Data");
 			return;
 		}
+		
+		// Reset UI states
+		m_EditorHud.LeftSearchBar.SetText(string.Empty);
+		m_EditorHud.RightSearchBar.SetText(string.Empty);
 		
 		int created_objects, deleted_objects;
 		if (save_data.MapName != string.Empty && save_data.MapName != GetGame().GetWorldName()) {			
@@ -3161,8 +3198,10 @@ class Editor: Managed
 
 		// Save Objects
 		EditorObjectMap placed_objects = GetPlacedObjects();
+		EditorDeletedObjectMap deleted_objects = GetObjectManager().GetDeletedObjects();
 		if (selected_only) {
 			placed_objects = GetSelectedObjects();
+			deleted_objects = GetSelectedHiddenObjects();
 		}
 		
 		if (placed_objects) {
@@ -3173,10 +3212,11 @@ class Editor: Managed
 			}
 		}
 		
-		EditorDeletedObjectMap deleted_objects = GetObjectManager().GetDeletedObjects();
-		foreach (int id, EditorDeletedObject deleted_object: deleted_objects) {
-			if (deleted_object.GetWorldObject()) {
-				save_data.EditorHiddenObjects.Insert(deleted_object.GetData());
+		if (deleted_objects) {
+			foreach (int id, EditorDeletedObject deleted_object: deleted_objects) {
+				if (deleted_object.GetWorldObject()) {
+					save_data.EditorHiddenObjects.Insert(deleted_object.GetData());
+				}
 			}
 		}
 		
