@@ -999,10 +999,35 @@ class Editor: Managed
 	}
 	
 	protected vector m_HandsInputOrientation;
+
+	bool ValidateMainHandObject()
+	{
+		EditorWorldObject fallback_object;
+		foreach (EditorWorldObject world_object, EditorHandData hand_data: m_PlacingObjects) {
+			if (!world_object || !world_object.GetWorldObject()) {
+				continue;
+			}
+
+			if (world_object == m_MainHandObject) {
+				return true;
+			}
+
+			if (!fallback_object) {
+				fallback_object = world_object;
+			}
+		}
+
+		m_MainHandObject = fallback_object;
+		return m_MainHandObject != null;
+	}
 	
 	// maybe abstract this to a new class, like EditorHandsManager
 	void HandleHands(float dt)
 	{
+		if (!ValidateMainHandObject()) {
+			return;
+		}
+
 		Input input = GetGame().GetInput();
 		array<Object> objects_to_ignore = { m_Player };
 		foreach (EditorWorldObject world_object_0, EditorHandData hand_data_0: m_PlacingObjects) {
@@ -1068,7 +1093,7 @@ class Editor: Managed
 	
 	void ProcessInput(float dt, Input input)
 	{
-		bool input_unlocked = (!GetFocus() || !GetFocus().IsInherited(EditBoxWidget)) && !GetEditorHud().GetDialog();
+		bool input_unlocked = (!GetFocus() || !GetFocus().IsInherited(EditBoxWidget)) && !GetEditorHud().GetDialog() && !GetEditorHud().IsBuildMenuOpen();
 		if (!input_unlocked) {
 			return;
 		}
@@ -1600,6 +1625,10 @@ class Editor: Managed
 		if ((m_EditorHud.GetDialog() || m_EditorHud.CurrentDialog) && key != KeyCode.KC_ESCAPE) {
 			return false;
 		}
+
+		if (m_EditorHud && m_EditorHud.IsBuildMenuOpen() && key != KeyCode.KC_ESCAPE) {
+			return true;
+		}
 				
 		//if (!GetGame().GetInput().HasGameFocus(INPUT_DEVICE_KEYBOARD)) {
 			//return false;
@@ -1796,17 +1825,26 @@ class Editor: Managed
 	
 	void RemoveFromHand(EditorWorldObject world_object)
 	{
+		if (!world_object) {
+			ValidateMainHandObject();
+			return;
+		}
+
 		EditorEvents.RemoveFromHand(this, world_object, m_PlacingObjects[world_object]);
 		m_PlacingObjects.Remove(world_object);
-		delete world_object;		
+		delete world_object;
+		ValidateMainHandObject();
 	}
 	
 	void ClearHand()
 	{
 		EditorLog.Trace("Editor::ClearHand");
-		foreach (EditorWorldObject world_object, EditorHandData hand_data: m_PlacingObjects) {
+		array<EditorWorldObject> placing_objects = m_PlacingObjects.GetKeyArray();
+		foreach (EditorWorldObject world_object: placing_objects) {
 			RemoveFromHand(world_object);
 		}
+
+		ValidateMainHandObject();
 	}
 	
 	array<EditorWorldObject> GetPlacingObjects()
@@ -1998,7 +2036,7 @@ class Editor: Managed
 			m_EditorHud.SetBrushState(0);
 		}
 		
-		if (m_PlacingObjects.Count() == 0) {
+		if (!ValidateMainHandObject()) {
 			m_MainHandObject = world_object;
 		}
 		

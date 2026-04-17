@@ -113,6 +113,9 @@ class EditorHud: ScriptView
 	protected ref array<vector> m_LassoHistory = {};
 	
 	protected ref EditorCameraMarker m_EditorCameraMarker;
+	protected ref EditorBuildMenuView m_BuildMenu;
+	protected bool m_BuildMenuPreviousLeftbar;
+	protected bool m_BuildMenuPreviousRightbar;
 	
 	static const ref array<string> ThemedWidgetStrings = {
 		"LeftbarPanelSearchBarIconButton",
@@ -136,7 +139,7 @@ class EditorHud: ScriptView
 	
 	ref EditorNode Root = new EditorNode();
 	
-	ref map<string, EditorFolderNode> m_FolderNodes = new map<string, EditorFolderNode>();		
+	ref map<string, EditorNode> m_FolderNodes = new map<string, EditorNode>();
 	ref map<int, ref array<EditorNode>> m_FolderNodesByDepth = new map<int, ref array<EditorNode>>();		
 	ref array<EditorNode> m_SearchableListNodes = {};
 	
@@ -201,7 +204,7 @@ class EditorHud: ScriptView
 				if (i < model_path_split.Count() - 1) {
 					EditorFolderNode folder_node;
 					if (m_FolderNodes.Contains(full_path)) {
-						folder_node = m_FolderNodes[full_path];
+						folder_node = EditorFolderNode.Cast(m_FolderNodes[full_path]);
 					} else {
 						folder_node = new EditorFolderNode(folder_name);
 						m_FolderNodes[full_path] = folder_node;
@@ -215,10 +218,10 @@ class EditorHud: ScriptView
 							
 						if (i == 0) {
 							Root.InsertChild(folder_node);
-							m_TemplateController.LeftContent.Insert(folder_node.CreateView());
+							m_TemplateController.LeftContent.Insert(folder_node.EnsureView());
 						} else {
 							string directory_parent = full_path.Substring(0, full_path.LastIndexOf(SystemPath.SEPERATOR));
-							EditorFolderNode parent_node = m_FolderNodes[directory_parent];
+							EditorFolderNode parent_node = EditorFolderNode.Cast(m_FolderNodes[directory_parent]);
 							if (parent_node) {
 								parent_node.InsertChild(folder_node);
 							}
@@ -228,7 +231,6 @@ class EditorHud: ScriptView
 			}
 			
 			string model_directory = model_name.Substring(0, model_name.LastIndexOf(SystemPath.SEPERATOR));
-			EditorPlaceableListNode placeable_node = new EditorPlaceableListNode(placeable_item);
 			m_FolderNodes[model_name] = placeable_item;
 			m_FolderNodes[model_directory].InsertChild(placeable_item);		
 			
@@ -322,6 +324,18 @@ class EditorHud: ScriptView
 		CinematicCameraButton.Show(true);
 		
 		m_EditorCameraMarker = new EditorCameraMarker(GetGame().GetUserManager().GetSelectedUser().GetName());
+		m_BuildMenu = new EditorBuildMenuView(this, m_Editor.GetObjectManager().GetBuildMenuCatalog());
+		m_BuildMenu.SetParent(this);
+		m_LayoutRoot.AddChild(m_BuildMenu.GetLayoutRoot());
+		m_BuildMenu.Show(false);
+	}
+
+	void ~EditorHud()
+	{
+		GetGame().GetCallQueue(CALL_CATEGORY_GUI).Remove(DoRefreshSearchBar);
+		Root.ReleaseViewRecursive();
+		delete m_BuildMenu;
+		delete m_EditorCameraMarker;
 	}
 	
 	override void Update(float dt)
@@ -359,6 +373,7 @@ class EditorHud: ScriptView
 		UAInput right_mouse_input = input_api.GetInputByID(UAMenuBack);
 		UAInput toggle_hud_input = input_api.GetInputByName("EditorToggleUI");
 		UAInput toggle_cursor = input_api.GetInputByName("EditorToggleCursor");
+		UAInput toggle_build_menu = input_api.GetInputByName("EditorToggleBuildMenu");
 		UAInput toggle_editor = input_api.GetInputByName("EditorToggleActive");
 		UAInput teleport_to_cursor = input_api.GetInputByName("EditorTeleportPlayerToCursor");
 		UAInput toggle_map = input_api.GetInputByName("EditorToggleMap");
@@ -371,12 +386,27 @@ class EditorHud: ScriptView
 		bool useful_widget_under_cursor = widget_under_cursor && widget_under_cursor.GetName() != "HudPanel" && widget_under_cursor.GetName() != "CursorIcons";
 		Widget focus_widget = GetFocus();
 		bool cursor_visible = GetGame().GetUIManager().IsCursorVisible();
-		bool input_unlocked = (!focus_widget || !focus_widget.IsInherited(EditBoxWidget)) && !m_Dialog;
+		bool build_menu_open = IsBuildMenuOpen();
+		bool build_menu_hotkey_unlocked = (!focus_widget || !focus_widget.IsInherited(EditBoxWidget)) && !m_Dialog;
+		bool input_unlocked = (!focus_widget || !focus_widget.IsInherited(EditBoxWidget)) && !m_Dialog && !build_menu_open;
 		bool any_mouse_press = (left_mouse_input.LocalPress() || right_mouse_input.LocalPress());
 
 		if (m_Editor.IsInventoryEditorActive()) {
+			CloseBuildMenu(false);
 			m_LayoutRoot.Show(false);
 			return;
+		}
+
+		if (toggle_build_menu && toggle_build_menu.LocalPress() && build_menu_hotkey_unlocked && !g_Game.IsLeftCtrlDown()) {
+			if (build_menu_open) {
+				CloseBuildMenu();
+				return;
+			}
+
+			if (input_unlocked && m_LayoutRoot.IsVisible() && !Map.IsVisible() && !m_Editor.IsPlayerControlled() && m_Editor.IsActive()) {
+				ToggleBuildMenu();
+				return;
+			}
 		}
 		
 		if (toggle_map.LocalPress() && input_unlocked && m_LayoutRoot.IsVisible()) {
@@ -1047,62 +1077,94 @@ class EditorHud: ScriptView
 		return super.OnFocus(w, x, y);
 	}	
 		
+	// Safe to call from any event handler. Schedules the actual work to run on the next frame, so it never runs mid-event dispatch (prevents crashes when filter expansion is active).
 	void RefreshSearchBar()
 	{
+		if (!m_SearchBarDirty) {
+			m_SearchBarDirty = true;
+			GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(DoRefreshSearchBar, 0, false);
+		}
+	}
+
+	protected void DoRefreshSearchBar()
+	{
+		m_SearchBarDirty = false;
 #ifdef DIAG_DEVELOPER
 		ScopedFunctionTimer t("RefreshSearchBar");
 #endif
-		int screen_x, screen_y;
-		GetScreenSize(screen_x, screen_y);
 		bool favorite_toggle = GetEditor().GetSettings().ShowFavoriteObjects;
 		string search_string = LeftSearchBar.GetText();
 		search_string.ToLower();		
-		
-		float static_visual_addition = 24 * screen_y / 1080.0;
 
 		bool has_requirements_for_search = search_string.Length() > 2 || favorite_toggle;
 		
 		int depth = m_FolderNodesByDepth.Count() - 1;
+
+		// Restore filter expansion state before applying the next filter snapshot.
+		for (int ri = depth; ri >= 0; ri--) {
+			array<EditorNode> ri_nodes = m_FolderNodesByDepth[ri];
+			for (int rj = 0; rj < ri_nodes.Count(); rj++) {
+				EditorNodeView ri_view = ri_nodes[rj].GetView();
+				if (ri_view && ri_view.IsFilterExpanded()) {
+					ri_view.SetFilterExpanded(false);
+				}
+			}
+		}
+
+		// Create first time child views only for collapsed folders that need filter expansion.
+		if (has_requirements_for_search) {
+			for (int pi = 0; pi <= depth; pi++) {
+				array<EditorNode> pi_nodes = m_FolderNodesByDepth[pi];
+				for (int pj = 0; pj < pi_nodes.Count(); pj++) {
+					EditorNode pi_node = pi_nodes[pj];
+					if (!pi_node.HasView() || !pi_node.Children.Count()) {
+						continue;
+					}
+
+					EditorNodeView pi_view = pi_node.GetView();
+					if (!pi_view.IsCollapsed()) {
+						continue;
+					}
+
+					if (pi_node.FilterType(search_string, favorite_toggle)) {
+						pi_view.SetFilterExpanded(true);
+					}
+				}
+			}
+		}
+
 		for (int i = depth; i >= 0; --i) {
 			array<EditorNode> nodes = m_FolderNodesByDepth[i];			
 			for (int j = 0; j < nodes.Count(); j++) {				
 				EditorNode node = nodes[j];
-				Widget layout = node.CreateView().GetLayoutRoot();
-				bool search_succeed = !has_requirements_for_search;
-				if (has_requirements_for_search) {
-					search_succeed = node.FilterType(search_string, favorite_toggle);
+
+				// Viewless nodes are invisible by definition, so there is nothing to show/hide.
+				if (!node.HasView()) {
+					continue;
+				}
+
+				EditorNodeView node_view = node.GetView();
+				Widget layout = node_view.GetLayoutRoot();
+				if (!layout) {
+					continue;
 				}
 				
-				// Check if we should do a temporary reveal due to children nodes being searched for
-				bool temporary_reveal = false;
-				if (has_requirements_for_search) {
-					for (int k = 0; k < node.Children.Count(); k++) {
-						if (node.Children[k].GetView().GetLayoutRoot().IsVisible()) {
-							temporary_reveal = true;
-							break;
-						}
+				if (!has_requirements_for_search) {
+					if (node.Children.Count()) {
+						node_view.SetChildrenVisible(!node_view.IsCollapsed());
 					}
-				} else {
-					temporary_reveal = !node.GetView().IsCollapsed();
+
+					layout.Show(true, false);
+					continue;
 				}
-																
-				float ch_s_x = 0, ch_s_y = 0;
+
+				bool search_succeed = node.FilterType(search_string, favorite_toggle);
 				if (node.Children.Count()) {
-					node.GetView().Children.Show(temporary_reveal, false);
-					// Temporarily change the icon
-					node.GetView().CollapseIcon.SetImage(temporary_reveal);
-					
-					node.GetView().Children.Update();
-					node.GetView().Children.GetScreenSize(ch_s_x, ch_s_y);
-					
-					ch_s_y *= temporary_reveal;
-							
-					// Idk why I have to do screen_y / 1080 because it is already set to scaled. wtf is going on??
-					layout.SetScreenSize(screen_x, ch_s_y + static_visual_addition, true);
-					node.GetView().ChildrenHeight.SetScreenSize(2, ch_s_y, false);
+					bool children_visible = !node_view.IsCollapsed() || node_view.IsFilterExpanded();
+					node_view.SetChildrenVisible(children_visible);
 				}
 				
-				layout.Show(search_succeed || ch_s_y > 0 || temporary_reveal, false);
+				layout.Show(search_succeed, false);
 				
 #ifdef DIAG_DEVELOPER
 				t.IncrementAction();
@@ -1112,6 +1174,34 @@ class EditorHud: ScriptView
 				
 		Symbols left_search_bar_icon = Ternary<Symbols>.If(!search_string.Length(), Symbols.MAGNIFYING_GLASS, Symbols.X);
 		left_search_bar_icon.Load(LeftSearchBarIconIcon);
+	}
+
+	void SetFavoriteState(EditorPlaceableItem placeable, bool favorite)
+	{
+		if (!placeable) {
+			return;
+		}
+
+		EditorSettings settings = GetEditor().GetSettings();
+		bool is_favorite = settings.FavoriteItems.Find(placeable.Type) != -1;
+		if (is_favorite == favorite) {
+			return;
+		}
+
+		if (favorite) {
+			settings.FavoriteItems.Insert(placeable.Type);
+		} else {
+			settings.FavoriteItems.RemoveItem(placeable.Type);
+		}
+
+		settings.Save();
+		RefreshSearchBar();
+
+		if (m_BuildMenu) {
+			m_BuildMenu.OnFavoriteStateChanged();
+		}
+
+		RefreshFavoriteIndicators();
 	}
 	
 	override bool OnChange(Widget w, int x, int y, bool finished)
@@ -1278,6 +1368,10 @@ class EditorHud: ScriptView
 	
 	void ShowCursor(bool state) 
 	{
+		if (!state && IsBuildMenuOpen()) {
+			CloseBuildMenu(false);
+		}
+
 		GetGame().GetUIManager().ShowCursor(state);
 		
 		if (!state) {
@@ -1310,6 +1404,60 @@ class EditorHud: ScriptView
 	bool IsMapVisible()
 	{
 		return Map.IsVisible();
+	}
+
+	void ToggleBuildMenu()
+	{
+		if (IsBuildMenuOpen()) {
+			CloseBuildMenu();
+			return;
+		}
+
+		if (m_BuildMenu) {
+			// Hide editor UI so BuildMenu renders unobstructed
+			m_BuildMenuPreviousLeftbar = m_TemplateController.LeftbarFrame.IsVisible();
+			m_BuildMenuPreviousRightbar = m_TemplateController.RightbarFrame.IsVisible();
+			m_TemplateController.LeftbarFrame.Show(false);
+			m_TemplateController.RightbarFrame.Show(false);
+			Menubar.Show(false);
+			ToolsWrapper.Show(false);
+			InfobarFrame.Show(false);
+			ToolbarFrame.Show(false);
+			Widget compass = m_LayoutRoot.FindAnyWidget("CompassTicks");
+			if (compass) compass.Show(false);
+			m_BuildMenu.Open();
+		}
+	}
+
+	void CloseBuildMenu(bool restore_cursor = true)
+	{
+		if (m_BuildMenu) {
+			m_BuildMenu.Close(restore_cursor);
+			// OnBuildMenuClosed() is called by BuildMenu.Close() to restore UI
+		}
+	}
+
+	// Called by EditorBuildMenuView.Close() to restore editor UI
+	void OnBuildMenuClosed()
+	{
+		m_TemplateController.LeftbarFrame.Show(m_BuildMenuPreviousLeftbar);
+		m_TemplateController.RightbarFrame.Show(m_BuildMenuPreviousRightbar);
+		Menubar.Show(true);
+		ToolsWrapper.Show(true);
+		InfobarFrame.Show(true);
+		ToolbarFrame.Show(true);
+		Widget compass = m_LayoutRoot.FindAnyWidget("CompassTicks");
+		if (compass) compass.Show(true);
+	}
+
+	bool IsBuildMenuOpen()
+	{
+		return m_BuildMenu && m_BuildMenu.IsOpen();
+	}
+
+	EditorBuildMenuView GetBuildMenu()
+	{
+		return m_BuildMenu;
 	}
 	
 	bool IsSelectionBoxActive()
@@ -1366,6 +1514,23 @@ class EditorHud: ScriptView
 	void ClearCurrentTooltip()
 	{
 		g_Game.ClearTooltip();
+	}
+
+	void RefreshFavoriteIndicators()
+	{
+		foreach (EditorNode list_node: m_SearchableListNodes) {
+			EditorPlaceableItem placeable_item;
+			if (Class.CastTo(placeable_item, list_node)) {
+				EditorPlaceableListNode placeable_view = EditorPlaceableListNode.Cast(placeable_item.GetView());
+				if (placeable_view) {
+					placeable_view.RefreshFavoriteState();
+				}
+			}
+		}
+
+		if (m_BuildMenu) {
+			m_BuildMenu.RefreshAllCardFavorites();
+		}
 	}
 	
 	bool ReloadBrushes(string file)

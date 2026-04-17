@@ -38,6 +38,7 @@ class EditorObjectManagerModule : Managed
 	// lookup table by p3d
 	protected ref map<string, ref array<EditorPlaceableItem>> m_PlaceableObjectsByP3dFile = new map<string, ref array<EditorPlaceableItem>>();
 	protected ref map<string, ref array<EditorPlaceableItem>> m_PlaceableObjectsByP3dPath = new map<string, ref array<EditorPlaceableItem>>();
+	protected ref EditorBuildMenuCatalog m_BuildMenuCatalog;
 	protected vector m_AveragePositionOfSelection;
 
 	// Current Selected PlaceableListItem
@@ -225,6 +226,9 @@ class EditorObjectManagerModule : Managed
 			m_PlaceableObjects.Insert(EditorPlaceableItem.Create(SpotlightLight));
 			m_PlaceableObjects.Insert(EditorPlaceableItem.Create(UniversallightLight));
 		}
+
+		m_BuildMenuCatalog = new EditorBuildMenuCatalog();
+		m_BuildMenuCatalog.Build(m_PlaceableObjects);
 	}
 
     void RegisterUnresolvedObject(EditorObject obj)
@@ -629,6 +633,11 @@ class EditorObjectManagerModule : Managed
 	array<ref EditorPlaceableItem> GetPlaceableObjects()
 	{
 		return m_PlaceableObjects;
+	}
+
+	EditorBuildMenuCatalog GetBuildMenuCatalog()
+	{
+		return m_BuildMenuCatalog;
 	}
 
 	// return a list of objects that use this p3d, useful for finding adequite replacements for 

@@ -1,0 +1,50 @@
+PanelWidgetClass BuildMenuSectionRoot {
+ visible 1
+ clipchildren 0
+ ignorepointer 0
+ size 0 0
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ {
+  PanelWidgetClass BuildMenuSectionHeader {
+   visible 1
+   clipchildren 1
+   ignorepointer 1
+   color 0.1255 0.1412 0.1765 0.94
+   position 0 0
+   size 420 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style rover_sim_colorable
+   {
+    TextWidgetClass BuildMenuSectionTitle {
+     ignorepointer 1
+     position 10 0
+     size 400 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "SECTION"
+     font "gui/fonts/sdf_MetronBook24"
+     "exact text size" 14
+     "text valign" center
+    }
+   }
+  }
+  PanelWidgetClass BuildMenuSectionGrid {
+   visible 1
+   ignorepointer 0
+   position 0 30
+   size 0 0
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+  }
+ }
+}

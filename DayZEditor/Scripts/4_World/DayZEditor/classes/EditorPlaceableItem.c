@@ -25,6 +25,14 @@ class EditorPlaceableItem : EditorNode
 		return GetEditor().GetSettings().FavoriteItems.Find(Type) != -1;
 	}
 
+	override EditorNodeView CreateView()
+	{
+		if (!m_EditorNodeView) {
+			m_EditorNodeView = new EditorPlaceableListNode(this);
+		}
+		return m_EditorNodeView;
+	}
+
 	string GetName()
 	{
 		switch (Category)

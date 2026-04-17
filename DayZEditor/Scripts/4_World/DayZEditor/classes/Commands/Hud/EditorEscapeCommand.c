@@ -18,6 +18,11 @@ class EditorEscapeCommand: EditorCommand
 			return true;
 		}
 		
+		if (m_Editor.GetEditorHud().IsBuildMenuOpen()) {
+			m_Editor.GetEditorHud().CloseBuildMenu();
+			return true;
+		}
+		
 		if (EditorHud.CurrentMenu) {
 			delete EditorHud.CurrentMenu;
 			return true;

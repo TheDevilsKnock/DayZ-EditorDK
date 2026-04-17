@@ -18,7 +18,7 @@ class EditorDeletedObjectWorldMarker: EditorMarker
 			return;
 		}
 		
-		if (!m_Editor.GetEditorHud().IsVisible()) {
+		if (!m_Editor.GetEditorHud().IsVisible() || m_Editor.GetEditorHud().IsBuildMenuOpen()) {
 			m_LayoutRoot.Show(false);
 			return;
 		}

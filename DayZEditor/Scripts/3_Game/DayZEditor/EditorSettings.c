@@ -45,6 +45,11 @@ class EditorSettings: ProfileSettings
 	
 	bool ShowScopeZeroObjects		= false;
 	bool ShowFavoriteObjects		= false;
+	bool BuildMenuFavoritesOnly		= false;
+	int BuildMenuSourceFilter		= 0;
+	int BuildMenuPlacementTypeFilter = 0;
+	string BuildMenuLastTabId		= "structures";
+	string BuildMenuLastSubtabId	= "buildings";
 
 	// Camera Settings
 	float CameraSpeed				= 25;

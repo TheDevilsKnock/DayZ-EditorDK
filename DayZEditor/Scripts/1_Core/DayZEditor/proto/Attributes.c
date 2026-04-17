@@ -25,3 +25,61 @@ class RegisterEditorCommand: Class
 		Instances.Insert(brush);
 	}		
 }
+
+enum DayZEditorBuildMenuSourceKind
+{
+	DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA = 0,
+	DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED = 1
+}
+
+enum DayZEditorBuildMenuEntryMatchType
+{
+	DAYZ_EDITOR_BUILD_MENU_MATCH_TYPE = 0,
+	DAYZ_EDITOR_BUILD_MENU_MATCH_MODEL_PREFIX = 1,
+	DAYZ_EDITOR_BUILD_MENU_MATCH_ANCESTRY = 2
+}
+
+class RegisterDayZEditorBuildMenuSection: Class
+{
+	static ref array<ref Param5<string, string, string, string, int>> Instances = {};
+
+	void RegisterDayZEditorBuildMenuSection(string tab_id, string subcategory_id, string id, string label, int order = -1)
+	{
+		if (!Instances) {
+			Instances = {};
+		}
+
+		Instances.Insert(new Param5<string, string, string, string, int>(tab_id, subcategory_id, id, label, order));
+	}
+}
+
+class RegisterDayZEditorBuildMenuEntry: Class
+{
+	static ref array<ref Param8<int, string, string, string, string, int, string, int>> Instances = {};
+
+	void RegisterDayZEditorBuildMenuEntry(string match_value, string tab_id, string subcategory_id, string section_id = string.Empty, bool model_prefix = false, int source_kind = DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, string source_label = string.Empty, int priority = 100)
+	{
+		if (!Instances) {
+			Instances = {};
+		}
+
+		int match_type = DayZEditorBuildMenuEntryMatchType.DAYZ_EDITOR_BUILD_MENU_MATCH_TYPE;
+		if (model_prefix) {
+			match_type = DayZEditorBuildMenuEntryMatchType.DAYZ_EDITOR_BUILD_MENU_MATCH_MODEL_PREFIX;
+		}
+
+		Instances.Insert(new Param8<int, string, string, string, string, int, string, int>(match_type, match_value, tab_id, subcategory_id, section_id, source_kind, source_label, priority));
+	}
+}
+
+class RegisterDayZEditorBuildMenuEntryByAncestor: Class
+{
+	void RegisterDayZEditorBuildMenuEntryByAncestor(string ancestor, string tab_id, string subcategory_id, string section_id = string.Empty, int source_kind = DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, string source_label = string.Empty, int priority = 100)
+	{
+		if (!RegisterDayZEditorBuildMenuEntry.Instances) {
+			RegisterDayZEditorBuildMenuEntry.Instances = {};
+		}
+
+		RegisterDayZEditorBuildMenuEntry.Instances.Insert(new Param8<int, string, string, string, string, int, string, int>(DayZEditorBuildMenuEntryMatchType.DAYZ_EDITOR_BUILD_MENU_MATCH_ANCESTRY, ancestor, tab_id, subcategory_id, section_id, source_kind, source_label, priority));
+	}
+}

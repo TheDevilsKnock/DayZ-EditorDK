@@ -1,0 +1,42 @@
+PanelWidgetClass BuildMenuFilterButtonRoot {
+ visible 1
+ clipchildren 1
+ ignorepointer 0
+ size 100 26
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 0.1686 0.1804 0.2039 1
+ style rover_sim_colorable
+ {
+  TextWidgetClass BuildMenuFilterButtonLabel {
+   ignorepointer 1
+   size 1 1
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+   text "Filter"
+   font "gui/fonts/sdf_MetronBook24"
+   "exact text size" 12
+   "size to text h" 1
+   "size to text v" 1
+   "text halign" center
+   "text valign" center
+  }
+  ButtonWidgetClass BuildMenuFilterButton {
+   visible 1
+   clipchildren 0
+   ignorepointer 0
+   size 1 1
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   style Empty
+  }
+ }
+}

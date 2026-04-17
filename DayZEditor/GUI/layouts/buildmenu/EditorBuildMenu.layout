@@ -1,0 +1,448 @@
+PanelWidgetClass BuildMenuOverlay {
+ visible 1
+ disabled 0
+ clipchildren 0
+ inheritalpha 0
+ ignorepointer 0
+ size 1 1
+ scriptclass ""
+ {
+  PanelWidgetClass BuildMenuBackdrop {
+   visible 1
+   clipchildren 0
+   ignorepointer 1
+   color 0 0 0 0.7
+   size 1 1
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+   style rover_sim_colorable
+  }
+  PanelWidgetClass BuildMenuPanel {
+   visible 1
+   clipchildren 1
+   color 0.07 0.08 0.1 0.96
+   position 0 0
+   size 0.95 0.93
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 0
+   vexactsize 0
+   style rover_sim_colorable
+   {
+    TextWidgetClass BuildMenuTitle {
+     visible 0
+     ignorepointer 1
+     position 24 20
+     size 400 30
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "BuildMenu"
+     font "gui/fonts/sdf_MetronBook24"
+     "exact text size" 20
+     "size to text h" 1
+     "size to text v" 1
+    }
+    ButtonWidgetClass BuildMenuCloseButton {
+     color 0.11 0.12 0.14 1
+     position 2 2
+     size 20 20
+     halign right_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Default
+     {
+      TextWidgetClass BuildMenuCloseLabel {
+       ignorepointer 1
+       position 0 0
+       size 0.66 0.66
+       halign center_ref
+       valign center_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 0
+       text "X"
+       font "gui/fonts/sdf_MetronBook24"
+       "exact text size" 16
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+    PanelWidgetClass BuildMenuTabRow {
+     visible 1
+     clipchildren 1
+     ignorepointer 0
+     color 0.075 0.078 0.09 0.92
+     position 24 18
+     size 0.955 30
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 1
+     style rover_sim_colorable
+    }
+    PanelWidgetClass BuildMenuSubcategoryRow {
+     visible 1
+     clipchildren 1
+     ignorepointer 0
+     color 0.063 0.067 0.078 0.92
+     position 24 54
+     size 0.955 30
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 1
+     style rover_sim_colorable
+    }
+    ScrollWidgetClass BuildMenuScroll {
+     visible 1
+     clipchildren 1
+     ignorepointer 0
+     position 24 96
+     size 0.97 0.84
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     "Scrollbar V" 1
+     {
+      PanelWidgetClass BuildMenuSectionList {
+       visible 1
+       ignorepointer 0
+       position 0 0
+       size 0 0
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+      }
+     }
+    }
+    TextWidgetClass BuildMenuEmptyLabel {
+     visible 0
+     ignorepointer 1
+     position 0 0
+     size 500 30
+     halign center_ref
+     valign center_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "No items match the current filters."
+     font "gui/fonts/sdf_MetronBook24"
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+    PanelWidgetClass BuildMenuBottomBar {
+     visible 1
+     ignorepointer 0
+     color 0.05 0.06 0.07 1
+     position 0 0
+     size 1 48
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 1
+     priority 100
+     style rover_sim_colorable
+     {
+      PanelWidgetClass BuildMenuFavoritesOnlyRoot {
+       visible 1
+       ignorepointer 0
+       color 0.16 0.17 0.2 1
+       position 24 0
+       size 32 32
+       valign center_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style rover_sim_colorable
+       {
+        ButtonWidgetClass BuildMenuFavoritesOnlyButton {
+         visible 1
+         color 1 1 1 0
+         size 1 1
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+         style Empty
+         {
+          ImageWidgetClass BuildMenuFavoritesOnlyIcon {
+           ignorepointer 1
+           color 0.788 0.816 0.847 0.92
+           position 0 0
+           size 16 16
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           scriptclass "SymbolHandler"
+           image0 ""
+           mode blend
+           "src alpha" 1
+           filter 1
+           {
+            ScriptParamsClass {
+             Symbol_Name "bookmark"
+             Symbol_Size 2
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+      PanelWidgetClass BuildMenuConfigOnlyRoot {
+       visible 1
+       ignorepointer 0
+       color 0.16 0.17 0.2 1
+       position 92 0
+       size 58 32
+       valign center_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style rover_sim_colorable
+       {
+        ButtonWidgetClass BuildMenuConfigOnlyButton {
+         visible 1
+         color 1 1 1 0
+         size 1 1
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+         style Empty
+         {
+          TextWidgetClass BuildMenuConfigOnlyLabel {
+           ignorepointer 1
+           position 0 0
+           size 1 1
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           text "Config"
+           font "gui/fonts/sdf_MetronBook24"
+           "exact text size" 13
+           text_proportion 0.5
+           "text halign" center
+           "text valign" center
+          }
+         }
+        }
+       }
+      }
+      PanelWidgetClass BuildMenuStaticOnlyRoot {
+       visible 1
+       ignorepointer 0
+       color 0.16 0.17 0.2 1
+       position 150 0
+       size 58 32
+       valign center_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style rover_sim_colorable
+       {
+        ButtonWidgetClass BuildMenuStaticOnlyButton {
+         visible 1
+         color 1 1 1 0
+         position 0 0
+         size 1 1
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+         style Empty
+         {
+          TextWidgetClass BuildMenuStaticOnlyLabel {
+           ignorepointer 1
+           position 0 0
+           size 1 1
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           text "Static"
+           font "gui/fonts/sdf_MetronBook24"
+           "exact text size" 13
+           text_proportion 0.5
+           "text halign" center
+           "text valign" center
+          }
+         }
+        }
+       }
+      }
+      PanelWidgetClass BuildMenuSearchBackground {
+       visible 1
+       ignorepointer 0
+       color 0.16 0.17 0.2 1
+       position 0.31 0
+       size 0.44 29
+       valign center_ref
+       hexactpos 0
+       vexactpos 1
+       hexactsize 0
+       vexactsize 1
+       style rover_sim_colorable
+       {
+        FrameWidgetClass BuildMenuSearchIconFrame {
+         ignorepointer 1
+         size 0.06 29
+         hexactpos 0
+         vexactpos 1
+         hexactsize 0
+         vexactsize 1
+         {
+          ImageWidgetClass BuildMenuSearchIcon {
+           ignorepointer 1
+           position 0 0
+           size 16 16
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           scriptclass "SymbolHandler"
+           image0 ""
+           mode blend
+           "src alpha" 1
+           "clamp mode" clamp
+           filter 1
+           {
+            ScriptParamsClass {
+             Symbol_Name "magnifying_glass"
+             Symbol_Size 2
+            }
+           }
+          }
+         }
+        }
+        ButtonWidgetClass BuildMenuSearchClearButton {
+         visible 1
+         color 0.11 0.12 0.14 1
+         position 14 0
+         size 22 22
+         halign right_ref
+         valign center_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Default
+         {
+          TextWidgetClass BuildMenuSearchClearButtonLabel {
+           ignorepointer 1
+           position 0 0
+           size 0.66 0.66
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 0
+           vexactsize 0
+           text "X"
+           font "gui/fonts/sdf_MetronBook24"
+           "exact text size" 16
+           "text halign" center
+           "text valign" center
+          }
+         }
+        }
+       }
+      }
+      EditBoxWidgetClass BuildMenuSearch {
+       visible 1
+       disabled 0
+       clipchildren 1
+       color 1 1 1 1
+       position 0.34 0
+       size 0.38 29
+       valign center_ref
+       hexactpos 0
+       vexactpos 1
+       hexactsize 0
+       vexactsize 1
+       style Default
+       text ""
+       font "gui/fonts/sdf_MetronBook24"
+      }
+      ButtonWidgetClass BuildMenuSourceCycleButton {
+       visible 1
+       color 0.14 0.15 0.18 1
+       position 24 0
+       size 128 32
+       halign right_ref
+       valign center_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Default
+       {
+        TextWidgetClass BuildMenuSourceCycleLabel {
+         ignorepointer 1
+         size 1 1
+         halign center_ref
+         valign center_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 0
+         text "All"
+         font "gui/fonts/sdf_MetronBook24"
+         "exact text size" 13
+         "text halign" center
+         "text valign" center
+        }
+       }
+      }
+     }
+    }
+    TextWidgetClass BuildMenuFooterHint {
+     visible 0
+     ignorepointer 1
+     position 24 20
+     size 460 24
+     halign right_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text ""
+     font "gui/fonts/sdf_MetronLight24"
+     "exact text size" 13
+     "text halign" right
+    }
+   }
+  }
+ }
+}

@@ -8,12 +8,12 @@ class EditorNode: Managed
 	void InsertChild(notnull EditorNode node)
 	{
 		Children.Insert(node);
-		
-		if (m_EditorNodeView && node.GetView()) {
-			m_EditorNodeView.InsertChild(node.CreateView());
-		}
-		
 		node.m_Parent = this;
+	}
+
+	bool HasView()
+	{
+		return m_EditorNodeView != null;
 	}
 		
 	EditorNodeView GetView()
@@ -25,14 +25,35 @@ class EditorNode: Managed
 	{
 		return m_Parent;
 	}
+
+	EditorNodeView EnsureView()
+	{
+		return CreateView();
+	}
+
+	void EnsureChildViewsAttached()
+	{
+		if (m_EditorNodeView) {
+			m_EditorNodeView.EnsureChildViewsAttached();
+		}
+	}
+
+	void ReleaseViewRecursive()
+	{
+		foreach (EditorNode child: Children) {
+			child.ReleaseViewRecursive();
+		}
+
+		if (m_EditorNodeView) {
+			delete m_EditorNodeView;
+			m_EditorNodeView = null;
+		}
+	}
 	
 	EditorNodeView CreateView()
 	{
 		if (!m_EditorNodeView) {
 			m_EditorNodeView = new EditorNodeView(this);
-			if (m_Parent) {
-				m_Parent.CreateView().InsertChild(m_EditorNodeView);
-			}
 		}
 		
 		return m_EditorNodeView;
@@ -69,7 +90,18 @@ class EditorFolderNode: EditorNode
 	
 	override bool FilterType(string filter, bool favorites)
 	{
-		return m_Text.Contains(filter);
+		// When a filter or favorites toggle is active, show this folder only if a descendant matches.
+		// allows the pre pass in RefreshSearchBar to detect which folders to expand.
+		if (favorites || filter.Length() > 0) {
+			foreach (EditorNode child: Children) {
+				if (child.FilterType(filter, favorites)) {
+					return true;
+				}
+			}
+			return false;
+		}
+		// No filter active, always visible.
+		return true;
 	}
 }
 
@@ -81,8 +113,9 @@ class EditorNodeView: ScriptView
 	protected bool m_IsCollapsed = true;
 	
 	protected EditorNode m_Node;
+	protected int m_AttachedChildCount;
 	
-	bool m_TemporaryReveal;
+	protected bool m_IsFilterExpanded;
 	
 	Widget Collapse, IconFrame, Hide, Panel, ChildrenHeight, Favorite;
 	ButtonWidget CollapseButton, HideButton, FavoriteButton;
@@ -109,6 +142,40 @@ class EditorNodeView: ScriptView
 		Collapse.Show(true);
 		Children.AddChild(list_node.GetLayoutRoot());
 	}
+
+	void EnsureChildViewsAttached()
+	{
+		Collapse.Show(m_Node.Children.Count() > 0);
+		if (m_AttachedChildCount >= m_Node.Children.Count()) {
+			return;
+		}
+
+		for (int i = m_AttachedChildCount; i < m_Node.Children.Count(); i++) {
+			EditorNodeView child_view = m_Node.Children[i].EnsureView();
+			if (child_view) {
+				InsertChild(child_view);
+			}
+		}
+
+		m_AttachedChildCount = m_Node.Children.Count();
+	}
+
+	void SetChildrenVisible(bool state)
+	{
+		Collapse.Show(m_Node.Children.Count() > 0);
+		Children.Show(state);
+		CollapseIcon.SetImage(state);
+
+		float child_width, child_height;
+		Children.Update();
+		Children.GetScreenSize(child_width, child_height);
+		child_height *= state;
+		ChildrenHeight.SetScreenSize(2, child_height);
+
+		int screen_x, screen_y;
+		GetScreenSize(screen_x, screen_y);
+		m_LayoutRoot.SetScreenSize(screen_x, child_height + 24 * screen_y / 1080.0);
+	}
 	
 	void SetCollapsed(bool collapsed)
 	{			
@@ -117,41 +184,41 @@ class EditorNodeView: ScriptView
 		}
 		
 		if (!collapsed) {
-			foreach (EditorNode node_child1: m_Node.Children) {
-				Children.AddChild(node_child1.CreateView().GetLayoutRoot());
-			}
-		} else {
-			foreach (EditorNode node_child2: m_Node.Children) {
-				delete node_child2.GetView();
-			}
+			m_Node.EnsureChildViewsAttached();
 		}
 		
 		m_IsCollapsed = collapsed;
-		Children.Show(!collapsed);
-		CollapseIcon.SetImage(!collapsed);
-		
-		float w, h, x, y;
-		Children.Update();
-		Children.GetScreenSize(w, h);
-		
-		h *= !collapsed;
-		
-		ChildrenHeight.SetScreenSize(2, h);
-		
-		int screen_x, screen_y;
-		GetScreenSize(screen_x, screen_y);		
-		m_LayoutRoot.SetScreenSize(screen_x, h + 24 * screen_y / 1080.0);
+		m_IsFilterExpanded = false; // user change always clears filter expansion state
+		SetChildrenVisible(!collapsed);
 		
 		// If you are setting this as collapsed, the parents must be uncollapsed because you can access it. we are using this to update the collapse state
-		if (m_Node.GetParent() && m_Node.GetParent().GetView()) {
+		if (m_Node.GetParent() && m_Node.GetParent().HasView()) {
 			m_Node.GetParent().GetView().SetCollapsed(false);
 		}
+	}
+			
+	// Applies or clears filter expansion without changing m_IsCollapsed.
+	// Used by RefreshSearchBar to show matching descendants while preserving user collapse state.
+	void SetFilterExpanded(bool state)
+	{
+		if (!m_Node.Children.Count()) {
+			return;
+		}
+
+		if (state) {
+			m_Node.EnsureChildViewsAttached();
+		}
+
+		m_IsFilterExpanded = state;
+		SetChildrenVisible(!m_IsCollapsed || m_IsFilterExpanded);
 	}
 			
 	void CollapseAll()
 	{		
 		for (int i = 0; i < m_Node.Children.Count(); i++) {
-			m_Node.Children[i].GetView().SetCollapsed(true);
+			if (m_Node.Children[i].HasView()) {
+				m_Node.Children[i].GetView().CollapseAll();
+			}
 		}
 		
 		SetCollapsed(true);
@@ -159,8 +226,10 @@ class EditorNodeView: ScriptView
 	
 	void ExpandAll()
 	{		
+		m_Node.EnsureChildViewsAttached();
+
 		for (int i = 0; i < m_Node.Children.Count(); i++) {
-			m_Node.Children[i].GetView().SetCollapsed(false);
+			m_Node.Children[i].EnsureView().ExpandAll();
 		}
 		
 		SetCollapsed(false);
@@ -169,6 +238,11 @@ class EditorNodeView: ScriptView
 	bool IsCollapsed()
 	{
 		return m_IsCollapsed;
+	}
+
+	bool IsFilterExpanded()
+	{
+		return m_IsFilterExpanded;
 	}
 	
 	override bool OnClick(Widget w, int x, int y, int button)
