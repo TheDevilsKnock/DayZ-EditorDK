@@ -273,10 +273,21 @@ class EditorObjectManagerModule : Managed
 	};
 		
 	static bool ValidatePath(string path)
-	{		
+	{
+		if (path == string.Empty) {
+			return false;
+		}
+
+		string normalized_path = path;
+		normalized_path.Replace("\\", "/");
+		normalized_path.ToLower();
+
 		foreach (string p: VALID_PATHS)
 		{
-			if (path.Contains(p))
+			string normalized_valid_path = p;
+			normalized_valid_path.Replace("\\", "/");
+			normalized_valid_path.ToLower();
+			if (normalized_path.Contains(normalized_valid_path))
 				return true;
 		}
 		

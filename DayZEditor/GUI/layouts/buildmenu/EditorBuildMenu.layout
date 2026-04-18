@@ -146,6 +146,251 @@ PanelWidgetClass BuildMenuOverlay {
      "text halign" center
      "text valign" center
     }
+    PanelWidgetClass BuildMenuSourceFilterPopupRoot {
+     visible 0
+     clipchildren 1
+     ignorepointer 0
+     color 0.09 0.1 0.12 0.98
+     position 60 0
+     size 212 164
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 110
+     style rover_sim_colorable
+     {
+      ScrollWidgetClass BuildMenuSourceFilterPopupScroll {
+       visible 1
+       clipchildren 1
+       ignorepointer 0
+       position 8 8
+       size 196 80
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       "Scrollbar V" 1
+       {
+        PanelWidgetClass BuildMenuSourceFilterPopupList {
+         visible 1
+         clipchildren 0
+         ignorepointer 0
+         position 0 0
+         size 196 80
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+        }
+       }
+      }
+      PanelWidgetClass BuildMenuSourceFilterPopupDivider {
+       visible 1
+       ignorepointer 1
+       color 0.18 0.2 0.24 1
+       position 8 94
+       size 196 1
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style rover_sim_colorable
+      }
+      PanelWidgetClass BuildMenuSourceFilterConsoleRoot {
+       visible 1
+       ignorepointer 0
+       color 0.16 0.17 0.2 1
+       position 8 102
+       size 96 34
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style rover_sim_colorable
+       {
+        ButtonWidgetClass BuildMenuSourceFilterConsoleButton {
+         visible 1
+         color 1 1 1 0
+         size 1 1
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+         style Empty
+         {
+          ImageWidgetClass BuildMenuSourceFilterConsoleIcon {
+           ignorepointer 1
+           position 0 0
+           size 16 16
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           scriptclass "SymbolHandler"
+           image0 ""
+           mode blend
+           "src alpha" 1
+           filter 1
+           {
+            ScriptParamsClass {
+             Symbol_Name "gamepad"
+             Symbol_Size 2
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+      PanelWidgetClass BuildMenuSourceFilterPCRoot {
+       visible 1
+       ignorepointer 0
+       color 0.16 0.17 0.2 1
+       position 108 102
+       size 96 34
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style rover_sim_colorable
+       {
+        ButtonWidgetClass BuildMenuSourceFilterPCButton {
+         visible 1
+         color 1 1 1 0
+         size 1 1
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+         style Empty
+         {
+          ImageWidgetClass BuildMenuSourceFilterPCIcon {
+           ignorepointer 1
+           position 0 0
+           size 16 16
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           scriptclass "SymbolHandler"
+           image0 ""
+           mode blend
+           "src alpha" 1
+           filter 1
+           {
+            ScriptParamsClass {
+             Symbol_Name "desktop"
+             Symbol_Size 2
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+      PanelWidgetClass BuildMenuSourceFilterRevertRoot {
+       visible 1
+       ignorepointer 0
+       color 0.16 0.17 0.2 1
+       position 8 140
+       size 96 34
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style rover_sim_colorable
+       {
+        ButtonWidgetClass BuildMenuSourceFilterRevertButton {
+         visible 1
+         color 1 1 1 0
+         size 1 1
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+         style Empty
+         {
+          ImageWidgetClass BuildMenuSourceFilterRevertIcon {
+           ignorepointer 1
+           position 0 0
+           size 16 16
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           scriptclass "SymbolHandler"
+           image0 ""
+           mode blend
+           "src alpha" 1
+           filter 1
+           {
+            ScriptParamsClass {
+             Symbol_Name "arrow_rotate_left"
+             Symbol_Size 2
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+      PanelWidgetClass BuildMenuSourceFilterSaveRoot {
+       visible 1
+       ignorepointer 0
+       color 0.16 0.17 0.2 1
+       position 108 140
+       size 96 34
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style rover_sim_colorable
+       {
+        ButtonWidgetClass BuildMenuSourceFilterSaveButton {
+         visible 1
+         color 1 1 1 0
+         size 1 1
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+         style Empty
+         {
+          ImageWidgetClass BuildMenuSourceFilterSaveIcon {
+           ignorepointer 1
+           position 0 0
+           size 16 16
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           scriptclass "SymbolHandler"
+           image0 ""
+           mode blend
+           "src alpha" 1
+           filter 1
+           {
+            ScriptParamsClass {
+             Symbol_Name "floppy_disk"
+             Symbol_Size 2
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
     PanelWidgetClass BuildMenuBottomBar {
      visible 1
      ignorepointer 0
@@ -210,11 +455,61 @@ PanelWidgetClass BuildMenuOverlay {
         }
        }
       }
+      PanelWidgetClass BuildMenuSourceFilterRoot {
+       visible 1
+       ignorepointer 0
+       color 0.16 0.17 0.2 1
+       position 60 0
+       size 32 32
+       valign center_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style rover_sim_colorable
+       {
+        ButtonWidgetClass BuildMenuSourceFilterButton {
+         visible 1
+         color 1 1 1 0
+         size 1 1
+         hexactpos 0
+         vexactpos 0
+         hexactsize 0
+         vexactsize 0
+         style Empty
+         {
+          ImageWidgetClass BuildMenuSourceFilterIcon {
+           ignorepointer 1
+           color 0.788 0.816 0.847 0.92
+           position 0 0
+           size 16 16
+           halign center_ref
+           valign center_ref
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           scriptclass "SymbolHandler"
+           image0 ""
+           mode blend
+           "src alpha" 1
+           filter 1
+           {
+            ScriptParamsClass {
+             Symbol_Name "filter"
+             Symbol_Size 2
+            }
+           }
+          }
+         }
+        }
+       }
+      }
       PanelWidgetClass BuildMenuConfigOnlyRoot {
        visible 1
        ignorepointer 0
        color 0.16 0.17 0.2 1
-       position 92 0
+       position 100 0
        size 58 32
        valign center_ref
        hexactpos 1
@@ -258,7 +553,7 @@ PanelWidgetClass BuildMenuOverlay {
        visible 1
        ignorepointer 0
        color 0.16 0.17 0.2 1
-       position 150 0
+       position 160 0
        size 58 32
        valign center_ref
        hexactpos 1
@@ -393,36 +688,6 @@ PanelWidgetClass BuildMenuOverlay {
        style Default
        text ""
        font "gui/fonts/sdf_MetronBook24"
-      }
-      ButtonWidgetClass BuildMenuSourceCycleButton {
-       visible 1
-       color 0.14 0.15 0.18 1
-       position 24 0
-       size 128 32
-       halign right_ref
-       valign center_ref
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       style Default
-       {
-        TextWidgetClass BuildMenuSourceCycleLabel {
-         ignorepointer 1
-         size 1 1
-         halign center_ref
-         valign center_ref
-         hexactpos 1
-         vexactpos 1
-         hexactsize 0
-         vexactsize 0
-         text "All"
-         font "gui/fonts/sdf_MetronBook24"
-         "exact text size" 13
-         "text halign" center
-         "text valign" center
-        }
-       }
       }
      }
     }

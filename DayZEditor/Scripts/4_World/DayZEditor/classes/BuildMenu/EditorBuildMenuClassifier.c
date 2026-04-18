@@ -5,16 +5,18 @@ class EditorBuildMenuPathRule: Managed
 	string SubcategoryId;
 	string SectionId;
 	int SourceKind = DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED;
+	string SourceId;
 	string SourceLabel;
 	int Order = -1;
 
-	void EditorBuildMenuPathRule(string path, string tab_id, string subcategory_id, string section_id = string.Empty, int source_kind = DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, string source_label = string.Empty, int order = -1)
+	void EditorBuildMenuPathRule(string path, string tab_id, string subcategory_id, string section_id = string.Empty, int source_kind = DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, string source_id = string.Empty, string source_label = string.Empty, int order = -1)
 	{
 		Path = path;
 		TabId = tab_id;
 		SubcategoryId = subcategory_id;
 		SectionId = section_id;
 		SourceKind = source_kind;
+		SourceId = source_id;
 		SourceLabel = source_label;
 		Order = order;
 	}
@@ -56,7 +58,7 @@ class XMLEditorBuildMenuClassification: XMLCallback
 			switch (child_tag.GetName()) {
 				case "VanillaPaths":
 					m_HasVanillaPaths = true;
-					ParseScopedPaths(child_tag.GetContent(), DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA, "Vanilla");
+					ParseScopedPaths(child_tag.GetContent(), DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA, "vanilla", "Vanilla");
 					break;
 
 				case "Mods":
@@ -120,11 +122,11 @@ class XMLEditorBuildMenuClassification: XMLCallback
 				mod_label = "Modded";
 			}
 
-			ParseScopedPaths(mod_tag.GetContent(), DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, mod_label);
+			ParseScopedPaths(mod_tag.GetContent(), DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, mod_id, mod_label);
 		}
 	}
 
-	protected void ParseScopedPaths(XMLElement content, int source_kind, string source_label)
+	protected void ParseScopedPaths(XMLElement content, int source_kind, string source_id, string source_label)
 	{
 		for (int i = 0; i < content.Count(); i++) {
 			XMLTag tab_tag = content.Get(i);
@@ -149,11 +151,11 @@ class XMLEditorBuildMenuClassification: XMLCallback
 				continue;
 			}
 
-			ParseTabPaths(tab_tag.GetContent(), tab_id, source_kind, source_label);
+			ParseTabPaths(tab_tag.GetContent(), tab_id, source_kind, source_id, source_label);
 		}
 	}
 
-	protected void ParseTabPaths(XMLElement content, string tab_id, int source_kind, string source_label)
+	protected void ParseTabPaths(XMLElement content, string tab_id, int source_kind, string source_id, string source_label)
 	{
 		for (int i = 0; i < content.Count(); i++) {
 			XMLTag subcategory_tag = content.Get(i);
@@ -179,11 +181,11 @@ class XMLEditorBuildMenuClassification: XMLCallback
 				continue;
 			}
 
-			ParseSubcategoryPaths(subcategory_tag.GetContent(), tab_id, subcategory_id, source_kind, source_label);
+			ParseSubcategoryPaths(subcategory_tag.GetContent(), tab_id, subcategory_id, source_kind, source_id, source_label);
 		}
 	}
 
-	protected void ParseSubcategoryPaths(XMLElement content, string tab_id, string subcategory_id, int source_kind, string source_label)
+	protected void ParseSubcategoryPaths(XMLElement content, string tab_id, string subcategory_id, int source_kind, string source_id, string source_label)
 	{
 		for (int i = 0; i < content.Count(); i++) {
 			XMLTag child_tag = content.Get(i);
@@ -197,7 +199,7 @@ class XMLEditorBuildMenuClassification: XMLCallback
 					break;
 
 				case "Path":
-					ParseLocalPath(child_tag, tab_id, subcategory_id, source_kind, source_label);
+					ParseLocalPath(child_tag, tab_id, subcategory_id, source_kind, source_id, source_label);
 					break;
 
 				default:
@@ -234,7 +236,7 @@ class XMLEditorBuildMenuClassification: XMLCallback
 		}
 	}
 
-	protected void ParseLocalPath(XMLTag path_tag, string tab_id, string subcategory_id, int source_kind, string source_label)
+	protected void ParseLocalPath(XMLTag path_tag, string tab_id, string subcategory_id, int source_kind, string source_id, string source_label)
 	{
 		string folder_path = EditorBuildMenuInference.NormalizeTextPath(GetStringAttribute(path_tag, "folder"));
 		string section_id = EditorBuildMenuInference.NormalizeId(GetStringAttribute(path_tag, "section"));
@@ -251,7 +253,7 @@ class XMLEditorBuildMenuClassification: XMLCallback
 			return;
 		}
 
-		m_Paths.Insert(new EditorBuildMenuPathRule(folder_path, tab_id, subcategory_id, section_id, source_kind, source_label, order));
+		m_Paths.Insert(new EditorBuildMenuPathRule(folder_path, tab_id, subcategory_id, section_id, source_kind, source_id, source_label, order));
 	}
 
 	protected void MarkDeprecatedFlatSchema(string tag_name)
@@ -403,7 +405,7 @@ class EditorBuildMenuInference
 
 		EditorBuildMenuPathRule matched_rule = FindPathRule(normalized_path);
 		if (matched_rule) {
-			return CreateResult(matched_rule.TabId, matched_rule.SubcategoryId, GetSectionId(normalized_path, matched_rule), matched_rule.SourceKind, GetSourceLabel(placeable, normalized_path, matched_rule.SourceLabel));
+			return CreateResult(matched_rule.TabId, matched_rule.SubcategoryId, GetSectionId(normalized_path, matched_rule), GetSourceKind(placeable, normalized_path, matched_rule.SourceId, matched_rule.SourceKind, matched_rule.SourceLabel), GetSourceId(placeable, normalized_path, matched_rule.SourceId, matched_rule.SourceKind, matched_rule.SourceLabel), GetSourceLabel(placeable, normalized_path, matched_rule.SourceId, matched_rule.SourceKind, matched_rule.SourceLabel));
 		}
 
 		EditorBuildMenuMatchResult actor_result = MatchActorOrEffect(placeable, normalized_path);
@@ -416,17 +418,17 @@ class EditorBuildMenuInference
 			fallback_section = "unknown";
 		}
 
-		if (normalized_path != string.Empty && (normalized_path.IndexOf("dz/") == 0 || normalized_path.IndexOf("dz_") == 0)) {
-			return CreateResult("misc", "unknown", fallback_section, DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA, "Vanilla");
-		}
-
 		string type_lower = placeable.Type;
 		type_lower.ToLower();
 		if (type_lower.IndexOf("land_") == 0 || type_lower.IndexOf("staticobj_") == 0 || type_lower.IndexOf("bldr_") == 0) {
-			return CreateResult("structures", "misc", fallback_section, GetSourceKind(placeable, normalized_path), GetSourceLabel(placeable, normalized_path));
+			return CreateResult("structures", "misc", fallback_section, GetSourceKind(placeable, normalized_path), GetSourceId(placeable, normalized_path), GetSourceLabel(placeable, normalized_path));
 		}
 
-		return CreateResult("misc", "unknown", fallback_section, GetSourceKind(placeable, normalized_path), GetSourceLabel(placeable, normalized_path));
+		if (normalized_path != string.Empty && (normalized_path.IndexOf("dz/") == 0 || normalized_path.IndexOf("dz_") == 0)) {
+			return CreateResult("misc", "unknown", fallback_section, DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA, "vanilla", "Vanilla");
+		}
+
+		return CreateResult("misc", "unknown", fallback_section, GetSourceKind(placeable, normalized_path), GetSourceId(placeable, normalized_path), GetSourceLabel(placeable, normalized_path));
 	}
 
 	static string NormalizePreviewPath(EditorPlaceableItem placeable)
@@ -773,7 +775,7 @@ class EditorBuildMenuInference
 			return null;
 		}
 
-		return CreateResult(best_registration.TabId, best_registration.SubcategoryId, best_registration.SectionId, best_registration.SourceKind, GetSourceLabel(placeable, normalized_path, best_registration.SourceLabel));
+		return CreateResult(best_registration.TabId, best_registration.SubcategoryId, best_registration.SectionId, GetSourceKind(placeable, normalized_path, string.Empty, best_registration.SourceKind, best_registration.SourceLabel), GetSourceId(placeable, normalized_path, string.Empty, best_registration.SourceKind, best_registration.SourceLabel), GetSourceLabel(placeable, normalized_path, string.Empty, best_registration.SourceKind, best_registration.SourceLabel));
 	}
 
 	protected static bool RegistrationMatches(EditorPlaceableItem placeable, DayZEditorBuildMenuEntryRegistration registration, string type_lower, string normalized_path)
@@ -822,14 +824,14 @@ class EditorBuildMenuInference
 		string type_lower = placeable.Type;
 		type_lower.ToLower();
 		if (type_lower.Contains("particle")) {
-			return CreateResult("effects", "particles", "particles", DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, "Editor");
+			return CreateResult("effects", "particles", "particles", DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, "dayzeditor", "DayZEditor");
 		}
 
 		if (type_lower.Contains("light")) {
-			return CreateResult("effects", "lights", "lights", DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, "Editor");
+			return CreateResult("effects", "lights", "lights", DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, "dayzeditor", "DayZEditor");
 		}
 
-		return CreateResult("misc", "editor", "scripted", DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, "Editor");
+		return CreateResult("misc", "editor", "scripted", DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, "dayzeditor", "DayZEditor");
 	}
 
 	protected static EditorBuildMenuMatchResult MatchActorOrEffect(EditorPlaceableItem placeable, string normalized_path)
@@ -838,29 +840,30 @@ class EditorBuildMenuInference
 			return null;
 		}
 
+		string source_id = GetSourceId(placeable, normalized_path);
 		string source_label = GetSourceLabel(placeable, normalized_path);
 		int source_kind = GetSourceKind(placeable, normalized_path);
 		string type_lower = placeable.Type;
 		type_lower.ToLower();
 
 		if (IsParticleType(placeable, type_lower)) {
-			return CreateResult("effects", "particles", "particles", source_kind, source_label);
+			return CreateResult("effects", "particles", "particles", source_kind, source_id, source_label);
 		}
 
 		if (IsLightType(placeable, type_lower)) {
-			return CreateResult("effects", "lights", "lights", source_kind, source_label);
+			return CreateResult("effects", "lights", "lights", source_kind, source_id, source_label);
 		}
 
 		if (GetGame().IsKindOf(placeable.Type, "ZombieBase")) {
-			return CreateResult("creatures", "infected", "zombies", source_kind, source_label);
+			return CreateResult("creatures", "infected", "zombies", source_kind, source_id, source_label);
 		}
 
 		if (type_lower.IndexOf("animal_") == 0 || normalized_path.IndexOf("dz/animals/") == 0) {
-			return CreateResult("creatures", "animals", GetAnimalSection(normalized_path, type_lower), source_kind, source_label);
+			return CreateResult("creatures", "animals", GetAnimalSection(normalized_path, type_lower), source_kind, source_id, source_label);
 		}
 
 		if (GetGame().IsKindOf(placeable.Type, "Man")) {
-			return CreateResult("creatures", "humans", "humans", source_kind, source_label);
+			return CreateResult("creatures", "humans", "humans", source_kind, source_id, source_label);
 		}
 
 		return null;
@@ -913,13 +916,29 @@ class EditorBuildMenuInference
 		return "animals";
 	}
 
-	protected static int GetSourceKind(EditorPlaceableItem placeable, string normalized_path)
+	protected static int GetSourceKind(EditorPlaceableItem placeable, string normalized_path, string explicit_source_id = string.Empty, int explicit_source_kind = -1, string explicit_source_label = string.Empty)
 	{
 		if (!placeable) {
 			return DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED;
 		}
 
 		if (placeable.Category == EditorPlaceableItemCategory.SCRIPTED) {
+			return DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED;
+		}
+
+		if (IsBuilderItemsPlaceable(placeable)) {
+			return DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED;
+		}
+
+		if (explicit_source_id == "vanilla" || explicit_source_kind == DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA) {
+			return DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA;
+		}
+
+		if (explicit_source_id != string.Empty || explicit_source_label != string.Empty || explicit_source_kind != -1) {
+			if (explicit_source_kind != -1) {
+				return explicit_source_kind;
+			}
+
 			return DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED;
 		}
 
@@ -930,14 +949,60 @@ class EditorBuildMenuInference
 		return DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED;
 	}
 
-	protected static string GetSourceLabel(EditorPlaceableItem placeable, string normalized_path, string explicit_source_label = string.Empty)
+	protected static string GetSourceId(EditorPlaceableItem placeable, string normalized_path, string explicit_source_id = string.Empty, int explicit_source_kind = -1, string explicit_source_label = string.Empty)
 	{
+		if (placeable && placeable.Category == EditorPlaceableItemCategory.SCRIPTED) {
+			return "dayzeditor";
+		}
+
+		if (IsBuilderItemsPlaceable(placeable)) {
+			return "builder_items";
+		}
+
+		if (explicit_source_id != string.Empty) {
+			return NormalizeId(explicit_source_id);
+		}
+
+		if (explicit_source_kind == DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA) {
+			return "vanilla";
+		}
+
+		if (explicit_source_label != string.Empty) {
+			return NormalizeId(explicit_source_label);
+		}
+
+		if (normalized_path != string.Empty && normalized_path.IndexOf("dz/") == 0) {
+			return "vanilla";
+		}
+
+		string path_root = GetPathRoot(normalized_path);
+		if (path_root != string.Empty) {
+			return NormalizeId(path_root);
+		}
+
+		return "modded";
+	}
+
+	protected static string GetSourceLabel(EditorPlaceableItem placeable, string normalized_path, string explicit_source_id = string.Empty, int explicit_source_kind = -1, string explicit_source_label = string.Empty)
+	{
+		if (placeable && placeable.Category == EditorPlaceableItemCategory.SCRIPTED) {
+			return "DayZEditor";
+		}
+
+		if (IsBuilderItemsPlaceable(placeable)) {
+			return "Builder Items";
+		}
+
 		if (explicit_source_label != string.Empty) {
 			return explicit_source_label;
 		}
 
-		if (placeable && placeable.Category == EditorPlaceableItemCategory.SCRIPTED) {
-			return "Editor";
+		if (explicit_source_id == "vanilla" || explicit_source_kind == DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA) {
+			return "Vanilla";
+		}
+
+		if (explicit_source_id != string.Empty) {
+			return FormatLabel(explicit_source_id);
 		}
 
 		if (normalized_path != string.Empty && normalized_path.IndexOf("dz/") == 0) {
@@ -952,6 +1017,35 @@ class EditorBuildMenuInference
 		return "Modded";
 	}
 
+	protected static bool IsBuilderItemsPlaceable(EditorPlaceableItem placeable)
+	{
+		if (!placeable) {
+			return false;
+		}
+
+		string type_lower = placeable.Type;
+		type_lower.ToLower();
+		if (type_lower.Contains("bldr_")) {
+			return true;
+		}
+
+		string path_lower = placeable.Path;
+		path_lower.Replace("\\", "/");
+		path_lower.ToLower();
+		if (path_lower.Contains("builderitems/")) {
+			return true;
+		}
+
+		string model_lower = placeable.GetModelName();
+		model_lower.Replace("\\", "/");
+		model_lower.ToLower();
+		if (model_lower.Contains("builderitems/")) {
+			return true;
+		}
+
+		return false;
+	}
+
 	protected static string GetPathRoot(string normalized_path)
 	{
 		array<string> segments = SplitPath(normalized_path);
@@ -962,7 +1056,7 @@ class EditorBuildMenuInference
 		return segments[0];
 	}
 
-	protected static EditorBuildMenuMatchResult CreateResult(string tab_id, string subcategory_id, string section_id, int source_kind, string source_label)
+	protected static EditorBuildMenuMatchResult CreateResult(string tab_id, string subcategory_id, string section_id, int source_kind, string source_id, string source_label)
 	{
 		EditorBuildMenuMatchResult result = new EditorBuildMenuMatchResult();
 		result.TabId = NormalizeId(tab_id);
@@ -976,7 +1070,7 @@ class EditorBuildMenuInference
 		if (result.SectionId == string.Empty) {
 			result.SectionId = "unknown";
 		}
-		result.SourceKind = source_kind;
+		result.SourceId = NormalizeId(source_id);
 		result.SourceLabel = source_label;
 		result.Resolved = true;
 		return result;

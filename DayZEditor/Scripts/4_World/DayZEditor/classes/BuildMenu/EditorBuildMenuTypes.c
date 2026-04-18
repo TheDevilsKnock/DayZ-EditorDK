@@ -1,8 +1,7 @@
-enum EditorBuildMenuSourceFilter
+enum EditorBuildMenuPlatformFilter
 {
-	EDITOR_BUILD_MENU_SOURCE_FILTER_ALL = 0,
-	EDITOR_BUILD_MENU_SOURCE_FILTER_VANILLA = 1,
-	EDITOR_BUILD_MENU_SOURCE_FILTER_MODDED = 2
+	EDITOR_BUILD_MENU_PLATFORM_FILTER_PC = 0,
+	EDITOR_BUILD_MENU_PLATFORM_FILTER_CONSOLE = 1
 }
 
 enum EditorBuildMenuPlacementTypeFilter
@@ -144,9 +143,21 @@ class EditorBuildMenuMatchResult: Managed
 	string TabId;
 	string SubcategoryId;
 	string SectionId;
-	int SourceKind = DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED;
+	string SourceId;
 	string SourceLabel;
 	bool Resolved;
+}
+
+class EditorBuildMenuSourceData: Managed
+{
+	string Id;
+	string Label;
+
+	void EditorBuildMenuSourceData(string id, string label)
+	{
+		Id = id;
+		Label = label;
+	}
 }
 
 class EditorBuildMenuFilterState: Managed
@@ -154,9 +165,10 @@ class EditorBuildMenuFilterState: Managed
 	string TabId;
 	string SubcategoryId;
 	string SearchText;
-	int SourceFilter = EditorBuildMenuSourceFilter.EDITOR_BUILD_MENU_SOURCE_FILTER_ALL;
+	int PlatformFilter = EditorBuildMenuPlatformFilter.EDITOR_BUILD_MENU_PLATFORM_FILTER_PC;
 	int PlacementTypeFilter = EditorBuildMenuPlacementTypeFilter.EDITOR_BUILD_MENU_PLACEMENT_TYPE_CONFIG;
 	bool FavoritesOnly;
+	ref array<string> SelectedSourceIds = {};
 
 	void SetSearchText(string search_text)
 	{
@@ -176,8 +188,8 @@ class EditorBuildMenuEntry: Managed
 	string SubcategoryId;
 	string SectionId;
 	string SectionLabel;
+	string SourceId;
 	string SourceLabel;
-	int SourceKind;
 	string SortKey;
 	bool CanPreview;
 
@@ -190,7 +202,7 @@ class EditorBuildMenuEntry: Managed
 		TabId = match_result.TabId;
 		SubcategoryId = match_result.SubcategoryId;
 		SectionId = match_result.SectionId;
-		SourceKind = match_result.SourceKind;
+		SourceId = match_result.SourceId;
 		SourceLabel = match_result.SourceLabel;
 		CanPreview = EditorBuildMenuInference.CanPreview(placeable, match_result);
 
@@ -238,11 +250,13 @@ class EditorBuildMenuEntry: Managed
 				return false;
 			}
 
-			if (state.SourceFilter == EditorBuildMenuSourceFilter.EDITOR_BUILD_MENU_SOURCE_FILTER_VANILLA && SourceKind != DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA) {
-				return false;
+			if (state.PlatformFilter == EditorBuildMenuPlatformFilter.EDITOR_BUILD_MENU_PLATFORM_FILTER_CONSOLE) {
+				if (!Placeable || !Placeable.ConsoleFriendly) {
+					return false;
+				}
 			}
 
-			if (state.SourceFilter == EditorBuildMenuSourceFilter.EDITOR_BUILD_MENU_SOURCE_FILTER_MODDED && SourceKind == DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA) {
+			if (state.SelectedSourceIds && state.SelectedSourceIds.Count() > 0 && state.SelectedSourceIds.Find(SourceId) == -1) {
 				return false;
 			}
 

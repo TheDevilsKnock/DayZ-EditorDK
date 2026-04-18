@@ -5,6 +5,7 @@ class EditorBuildMenuCatalog: Managed
 	protected ref map<string, ref EditorBuildMenuEntry> m_EntriesByStableId = new map<string, ref EditorBuildMenuEntry>();
 	protected ref map<string, ref array<ref EditorBuildMenuEntry>> m_EntriesByTab = new map<string, ref array<ref EditorBuildMenuEntry>>();
 	protected ref map<string, ref array<ref EditorBuildMenuEntry>> m_EntriesBySubcategory = new map<string, ref array<ref EditorBuildMenuEntry>>();
+	protected ref array<ref EditorBuildMenuSourceData> m_Sources = {};
 
 	static string GetStableId(EditorPlaceableItem placeable)
 	{
@@ -18,11 +19,16 @@ class EditorBuildMenuCatalog: Managed
 		m_EntriesByStableId.Clear();
 		m_EntriesByTab.Clear();
 		m_EntriesBySubcategory.Clear();
+		m_Sources.Clear();
 
 		ref map<string, int> entry_keys = new map<string, int>();
 
 		foreach (EditorPlaceableItem placeable_item: placeable_items) {
 			if (!placeable_item) {
+				continue;
+			}
+
+			if (!ShouldIncludePlaceable(placeable_item)) {
 				continue;
 			}
 
@@ -47,6 +53,7 @@ class EditorBuildMenuCatalog: Managed
 		}
 
 		IndexEntries();
+		IndexSources();
 	}
 
 	EditorBuildMenuTaxonomy GetTaxonomy()
@@ -65,6 +72,11 @@ class EditorBuildMenuCatalog: Managed
 		}
 
 		return m_EntriesByStableId[GetStableId(placeable)];
+	}
+
+	array<ref EditorBuildMenuSourceData> GetSources()
+	{
+		return m_Sources;
 	}
 
 	array<ref EditorBuildMenuSectionData> GetSections(EditorBuildMenuFilterState state)
@@ -156,6 +168,17 @@ class EditorBuildMenuCatalog: Managed
 		}
 	}
 
+	protected void IndexSources()
+	{
+		foreach (EditorBuildMenuEntry entry: m_Entries) {
+			if (!entry || entry.SourceId == string.Empty || entry.SourceLabel == string.Empty || FindSourceIndex(entry.SourceId) != -1) {
+				continue;
+			}
+
+			InsertSourceSorted(new EditorBuildMenuSourceData(entry.SourceId, entry.SourceLabel));
+		}
+	}
+
 	protected array<ref EditorBuildMenuEntry> EnsureBucket(map<string, ref array<ref EditorBuildMenuEntry>> buckets, string key)
 	{
 		if (!buckets[key]) {
@@ -204,6 +227,76 @@ class EditorBuildMenuCatalog: Managed
 		}
 
 		sections.InsertAt(section, insert_index);
+	}
+
+	protected int FindSourceIndex(string source_id)
+	{
+		for (int i = 0; i < m_Sources.Count(); i++) {
+			if (m_Sources[i] && m_Sources[i].Id == source_id) {
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	protected void InsertSourceSorted(EditorBuildMenuSourceData source)
+	{
+		int insert_index = m_Sources.Count();
+		for (int i = 0; i < m_Sources.Count(); i++) {
+			if (SortSourceBefore(source, m_Sources[i])) {
+				insert_index = i;
+				break;
+			}
+		}
+
+		m_Sources.InsertAt(source, insert_index);
+	}
+
+	protected static bool SortSourceBefore(EditorBuildMenuSourceData lhs, EditorBuildMenuSourceData rhs)
+	{
+		bool lhs_is_vanilla = lhs && lhs.Id == "vanilla";
+		bool rhs_is_vanilla = rhs && rhs.Id == "vanilla";
+		if (lhs_is_vanilla != rhs_is_vanilla) {
+			return !lhs_is_vanilla;
+		}
+
+		string lhs_lower = lhs.Label;
+		string rhs_lower = rhs.Label;
+		lhs_lower.ToLower();
+		rhs_lower.ToLower();
+		if (lhs_lower != rhs_lower) {
+			return lhs_lower < rhs_lower;
+		}
+
+		return lhs.Id < rhs.Id;
+	}
+
+	protected static bool ShouldIncludePlaceable(EditorPlaceableItem placeable)
+	{
+		if (!placeable) {
+			return false;
+		}
+
+		if (placeable.Category == EditorPlaceableItemCategory.SCRIPTED) {
+			return true;
+		}
+
+		string model_name = placeable.GetModelName();
+		model_name.Replace(SystemPath.SEPERATOR_ALT, SystemPath.SEPERATOR);
+		model_name.Replace(SystemPath.SEPERATOR + SystemPath.SEPERATOR, SystemPath.SEPERATOR);
+		model_name.ToLower();
+		model_name.TrimInPlace();
+
+		if (model_name == string.Empty) {
+			return false;
+		}
+
+		if (model_name == "bmp" || model_name == "bmp.p3d") {
+			return false;
+		}
+
+		return true;
 	}
 
 	protected static bool SortSectionBefore(EditorBuildMenuSectionData lhs, EditorBuildMenuSectionData rhs)

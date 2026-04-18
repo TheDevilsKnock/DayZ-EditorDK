@@ -1,8 +1,7 @@
 enum EditorBuildMenuFilterButtonType
 {
-	EDITOR_BUILD_MENU_FILTER_SOURCE = 0,
-	EDITOR_BUILD_MENU_FILTER_TAB = 1,
-	EDITOR_BUILD_MENU_FILTER_SUBCATEGORY = 2
+	EDITOR_BUILD_MENU_FILTER_TAB = 0,
+	EDITOR_BUILD_MENU_FILTER_SUBCATEGORY = 1
 }
 
 class EditorBuildMenuFilterButton: ScriptView
@@ -13,7 +12,6 @@ class EditorBuildMenuFilterButton: ScriptView
 
 	protected EditorBuildMenuView m_Owner;
 	protected string m_Id;
-	protected int m_Value = -1;
 	protected int m_ButtonType;
 	protected bool m_IsSelected;
 	protected bool m_IsHovered;
@@ -22,11 +20,10 @@ class EditorBuildMenuFilterButton: ScriptView
 	ButtonWidget BuildMenuFilterButton;
 	TextWidget BuildMenuFilterButtonLabel;
 
-	void EditorBuildMenuFilterButton(EditorBuildMenuView owner, string label, int button_type, string id = string.Empty, int value = -1)
+	void EditorBuildMenuFilterButton(EditorBuildMenuView owner, string label, int button_type, string id = string.Empty)
 	{
 		m_Owner = owner;
 		m_Id = id;
-		m_Value = value;
 		m_ButtonType = button_type;
 
 		BuildMenuFilterButtonLabel.SetText(label);
@@ -56,11 +53,6 @@ class EditorBuildMenuFilterButton: ScriptView
 	string GetId()
 	{
 		return m_Id;
-	}
-
-	int GetValue()
-	{
-		return m_Value;
 	}
 
 	int GetButtonType()
@@ -147,6 +139,64 @@ class EditorBuildMenuFilterButton: ScriptView
 			current = current.GetParent();
 		}
 
+		return false;
+	}
+}
+
+class EditorBuildMenuSourceFilterRow: ScriptView
+{
+	protected EditorBuildMenuView m_Owner;
+	protected string m_SourceId;
+	protected bool m_SuppressChanges;
+
+	CheckBoxWidget BuildMenuSourceFilterRowCheck;
+	TextWidget BuildMenuSourceFilterRowLabel;
+
+	void EditorBuildMenuSourceFilterRow(EditorBuildMenuView owner, string source_id, string source_label)
+	{
+		m_Owner = owner;
+		m_SourceId = source_id;
+		BuildMenuSourceFilterRowLabel.SetText(source_label);
+	}
+
+	string GetSourceId()
+	{
+		return m_SourceId;
+	}
+
+	void SetState(bool checked, bool enabled)
+	{
+		m_SuppressChanges = true;
+		BuildMenuSourceFilterRowCheck.SetChecked(checked);
+		BuildMenuSourceFilterRowCheck.Enable(enabled);
+		m_SuppressChanges = false;
+
+		if (BuildMenuSourceFilterRowLabel) {
+			if (enabled) {
+				BuildMenuSourceFilterRowLabel.SetColor(ARGB(235, 201, 208, 216));
+			} else {
+				BuildMenuSourceFilterRowLabel.SetColor(ARGB(180, 122, 128, 136));
+			}
+		}
+	}
+
+	override bool OnChange(Widget w, int x, int y, bool finished)
+	{
+		if (w == BuildMenuSourceFilterRowCheck && !m_SuppressChanges) {
+			m_Owner.OnSourceFilterRowChanged(this, BuildMenuSourceFilterRowCheck.IsChecked());
+			return true;
+		}
+
+		return super.OnChange(w, x, y, finished);
+	}
+
+	override string GetLayoutFile()
+	{
+		return "DayZEditor/gui/layouts/buildmenu/EditorBuildMenuSourceFilterRow.layout";
+	}
+
+	protected override bool UseUpdateLoop()
+	{
 		return false;
 	}
 }
@@ -877,6 +927,12 @@ class EditorBuildMenuView: ScriptView
 	static const float FILTER_BUTTON_SPACING = 6;
 	static const float FILTER_ROW_VERTICAL_PADDING = 4;
 	static const float SECTION_SPACING = 20;
+	static const float SOURCE_FILTER_POPUP_WIDTH = 212;
+	static const float SOURCE_FILTER_POPUP_PADDING = 8;
+	static const float SOURCE_FILTER_ROW_HEIGHT = 24;
+	static const float SOURCE_FILTER_BUTTON_HEIGHT = 34;
+	static const float SOURCE_FILTER_BUTTON_GAP = 4;
+	static const float SOURCE_FILTER_POPUP_GAP = 6;
 	static const int SEARCH_REFRESH_DELAY_MS = 200;
 	static const int PERSISTENT_STATE_SAVE_DELAY_MS = 300;
 
@@ -886,14 +942,11 @@ class EditorBuildMenuView: ScriptView
 	protected ref EditorBuildMenuFilterState m_FilterState = new EditorBuildMenuFilterState();
 	protected ref EditorBuildMenuPreviewPool m_PreviewPool = new EditorBuildMenuPreviewPool();
 
-	protected static const ref array<string> s_SourceFilterLabels = {
-		"All",
-		"Vanilla",
-		"Mod"
-	};
 	protected ref array<ref EditorBuildMenuFilterButton> m_TabButtons = {};
 	protected ref array<ref EditorBuildMenuFilterButton> m_SubcategoryButtons = {};
 	protected ref array<ref EditorBuildMenuSectionView> m_SectionViews = {};
+	protected ref array<ref EditorBuildMenuSourceFilterRow> m_SourceFilterRows = {};
+	protected ref array<string> m_PendingSelectedSourceIds = {};
 
 	protected bool m_IsOpen;
 	protected bool m_RestoreCursorVisible;
@@ -902,28 +955,37 @@ class EditorBuildMenuView: ScriptView
 	protected bool m_ResetScrollOnNextRender = true;
 	protected bool m_RebuildTabButtonsOnNextRender = true;
 	protected bool m_RebuildSubcategoryButtonsOnNextRender = true;
+	protected bool m_IsSourceFilterPopupOpen;
+	protected bool m_IsSourceFilterHovered;
 	protected bool m_IsFavoritesOnlyHovered;
 	protected bool m_IsConfigOnlyHovered;
 	protected bool m_IsStaticOnlyHovered;
+	protected bool m_IsSourceFilterConsoleHovered;
+	protected bool m_IsSourceFilterPCHovered;
+	protected bool m_IsSourceFilterRevertHovered;
+	protected bool m_IsSourceFilterSaveHovered;
 	protected float m_PreviewRefreshTimer;
 	protected float m_LastScrollPosition = -1;
 	protected string m_SearchText;
 	protected string m_SavedTabId;
 	protected string m_SavedSubcategoryId;
-	protected int m_SavedSourceFilter;
+	protected int m_PendingPlatformFilter;
+	protected int m_SavedPlatformFilter;
 	protected int m_SavedPlacementTypeFilter;
 	protected bool m_SavedFavoritesOnly;
+	protected ref array<string> m_SavedSelectedSourceIds = {};
 
 	Widget BuildMenuOverlay;
+	Widget BuildMenuPanel;
 	EditBoxWidget BuildMenuSearch;
 	ButtonWidget BuildMenuSearchClearButton;
 	ButtonWidget BuildMenuCloseButton;
-	ButtonWidget BuildMenuSourceCycleButton;
-	TextWidget BuildMenuSourceCycleLabel;
 	Widget BuildMenuTabRow;
 	Widget BuildMenuSubcategoryRow;
 	ScrollWidget BuildMenuScroll;
 	Widget BuildMenuSectionList;
+	Widget BuildMenuSourceFilterRoot;
+	ImageWidget BuildMenuSourceFilterIcon;
 	Widget BuildMenuFavoritesOnlyRoot;
 	ButtonWidget BuildMenuFavoritesOnlyButton;
 	ImageWidget BuildMenuFavoritesOnlyIcon;
@@ -933,6 +995,18 @@ class EditorBuildMenuView: ScriptView
 	Widget BuildMenuStaticOnlyRoot;
 	ButtonWidget BuildMenuStaticOnlyButton;
 	TextWidget BuildMenuStaticOnlyLabel;
+	Widget BuildMenuSourceFilterPopupRoot;
+	ScrollWidget BuildMenuSourceFilterPopupScroll;
+	Widget BuildMenuSourceFilterPopupList;
+	Widget BuildMenuSourceFilterPopupDivider;
+	Widget BuildMenuSourceFilterConsoleRoot;
+	ImageWidget BuildMenuSourceFilterConsoleIcon;
+	Widget BuildMenuSourceFilterPCRoot;
+	ImageWidget BuildMenuSourceFilterPCIcon;
+	Widget BuildMenuSourceFilterRevertRoot;
+	ImageWidget BuildMenuSourceFilterRevertIcon;
+	Widget BuildMenuSourceFilterSaveRoot;
+	ImageWidget BuildMenuSourceFilterSaveIcon;
 	TextWidget BuildMenuEmptyLabel;
 
 	void EditorBuildMenuView(EditorHud editor_hud, EditorBuildMenuCatalog catalog)
@@ -944,16 +1018,20 @@ class EditorBuildMenuView: ScriptView
 		EditorSettings settings = m_Editor.GetSettings();
 		m_FilterState.TabId = settings.BuildMenuLastTabId;
 		m_FilterState.SubcategoryId = settings.BuildMenuLastSubtabId;
-		m_FilterState.SourceFilter = Math.Clamp(settings.BuildMenuSourceFilter, 0, 2);
+		m_FilterState.PlatformFilter = Math.Clamp(settings.BuildMenuPlatformFilter, 0, 1);
 		m_FilterState.PlacementTypeFilter = Math.Clamp(settings.BuildMenuPlacementTypeFilter, 0, 1);
 		m_FilterState.FavoritesOnly = settings.BuildMenuFavoritesOnly;
+		m_FilterState.SelectedSourceIds = CopyStringArray(settings.BuildMenuSelectedSources);
+		NormalizeAppliedSourceFilters();
 		m_FilterState.SetSearchText(m_SearchText);
 		UpdateSavedStateSnapshot();
 
+		InitializeSourceFilterIcons();
+		UpdateSourceFilterButton();
 		UpdateFavoritesOnlyButton();
 		UpdatePlacementTypeButtons();
 		UpdateSearchClearButton();
-		UpdateSourceCycleLabel();
+		HideSourceFilterPopup();
 		Show(false);
 	}
 
@@ -963,6 +1041,8 @@ class EditorBuildMenuView: ScriptView
 		GetGame().GetCallQueue(CALL_CATEGORY_GUI).Remove(ApplySearchText);
 		GetGame().GetCallQueue(CALL_CATEGORY_GUI).Remove(SavePersistentState);
 		SavePersistentState();
+		CloseSourceFilterPopup();
+		ClearSourceFilterRows();
 		ClearTabButtons();
 		ClearSubcategoryButtons();
 		ClearSections();
@@ -989,6 +1069,8 @@ class EditorBuildMenuView: ScriptView
 		m_SuppressControlChanges = true;
 		BuildMenuSearch.SetText(m_SearchText);
 		m_SuppressControlChanges = false;
+		CloseSourceFilterPopup();
+		UpdateSourceFilterButton();
 		UpdateFavoritesOnlyButton();
 		UpdatePlacementTypeButtons();
 		UpdateSearchClearButton();
@@ -1009,6 +1091,7 @@ class EditorBuildMenuView: ScriptView
 		GetGame().GetCallQueue(CALL_CATEGORY_GUI).Remove(ApplySearchText);
 		GetGame().GetCallQueue(CALL_CATEGORY_GUI).Remove(SavePersistentState);
 		m_IsOpen = false;
+		CloseSourceFilterPopup();
 		m_SearchText = BuildMenuSearch.GetText();
 		m_FilterState.SetSearchText(m_SearchText);
 		SavePersistentState();
@@ -1047,12 +1130,11 @@ class EditorBuildMenuView: ScriptView
 
 	void OnFilterButtonPressed(EditorBuildMenuFilterButton button)
 	{
-		switch (button.GetButtonType()) {
-			case EditorBuildMenuFilterButtonType.EDITOR_BUILD_MENU_FILTER_SOURCE: {
-				SetSourceFilter(button.GetValue());
-				break;
-			}
+		if (m_IsSourceFilterPopupOpen) {
+			CloseSourceFilterPopup();
+		}
 
+		switch (button.GetButtonType()) {
 			case EditorBuildMenuFilterButtonType.EDITOR_BUILD_MENU_FILTER_TAB: {
 				SelectTab(button.GetId());
 				break;
@@ -1099,6 +1181,10 @@ class EditorBuildMenuView: ScriptView
 
 	override bool OnClick(Widget w, int x, int y, int button)
 	{
+		if (button == MouseState.LEFT && m_IsSourceFilterPopupOpen && !IsPartOfSourceFilterPopup(w) && !IsPartOfSourceFilterButton(w)) {
+			CloseSourceFilterPopup();
+		}
+
 		if (w == BuildMenuCloseButton && button == MouseState.LEFT) {
 			Close();
 			return true;
@@ -1113,6 +1199,11 @@ class EditorBuildMenuView: ScriptView
 			GetGame().GetCallQueue(CALL_CATEGORY_GUI).Remove(ApplySearchText);
 			ApplySearchText();
 			SetFocus(BuildMenuSearch);
+			return true;
+		}
+
+		if (button == MouseState.LEFT && IsPartOfSourceFilterButton(w)) {
+			ToggleSourceFilterPopup();
 			return true;
 		}
 
@@ -1134,8 +1225,23 @@ class EditorBuildMenuView: ScriptView
 			return true;
 		}
 
-		if (w == BuildMenuSourceCycleButton && button == MouseState.LEFT) {
-			CycleSourceFilter();
+		if (button == MouseState.LEFT && IsPartOfSourceFilterConsoleButton(w)) {
+			SetPendingPlatformFilter(EditorBuildMenuPlatformFilter.EDITOR_BUILD_MENU_PLATFORM_FILTER_CONSOLE);
+			return true;
+		}
+
+		if (button == MouseState.LEFT && IsPartOfSourceFilterPCButton(w)) {
+			SetPendingPlatformFilter(EditorBuildMenuPlatformFilter.EDITOR_BUILD_MENU_PLATFORM_FILTER_PC);
+			return true;
+		}
+
+		if (button == MouseState.LEFT && IsPartOfSourceFilterRevertButton(w)) {
+			RevertPendingSourceFilters();
+			return true;
+		}
+
+		if (button == MouseState.LEFT && IsPartOfSourceFilterSaveButton(w)) {
+			ApplyPendingSourceFilters();
 			return true;
 		}
 
@@ -1176,6 +1282,11 @@ class EditorBuildMenuView: ScriptView
 
 	override bool OnMouseEnter(Widget w, int x, int y)
 	{
+		if (IsPartOfSourceFilterButton(w)) {
+			m_IsSourceFilterHovered = true;
+			UpdateSourceFilterButton();
+		}
+
 		if (IsPartOfFavoritesOnlyButton(w)) {
 			m_IsFavoritesOnlyHovered = true;
 			UpdateFavoritesOnlyButton();
@@ -1191,11 +1302,36 @@ class EditorBuildMenuView: ScriptView
 			UpdatePlacementTypeButtons();
 		}
 
+		if (IsPartOfSourceFilterConsoleButton(w)) {
+			m_IsSourceFilterConsoleHovered = true;
+			UpdateSourceFilterPopupButtons();
+		}
+
+		if (IsPartOfSourceFilterPCButton(w)) {
+			m_IsSourceFilterPCHovered = true;
+			UpdateSourceFilterPopupButtons();
+		}
+
+		if (IsPartOfSourceFilterRevertButton(w)) {
+			m_IsSourceFilterRevertHovered = true;
+			UpdateSourceFilterPopupButtons();
+		}
+
+		if (IsPartOfSourceFilterSaveButton(w)) {
+			m_IsSourceFilterSaveHovered = true;
+			UpdateSourceFilterPopupButtons();
+		}
+
 		return super.OnMouseEnter(w, x, y);
 	}
 
 	override bool OnMouseLeave(Widget w, Widget enterW, int x, int y)
 	{
+		if (IsPartOfSourceFilterButton(w) && !IsPartOfSourceFilterButton(enterW)) {
+			m_IsSourceFilterHovered = false;
+			UpdateSourceFilterButton();
+		}
+
 		if (IsPartOfFavoritesOnlyButton(w) && !IsPartOfFavoritesOnlyButton(enterW)) {
 			m_IsFavoritesOnlyHovered = false;
 			UpdateFavoritesOnlyButton();
@@ -1209,6 +1345,26 @@ class EditorBuildMenuView: ScriptView
 		if (IsPartOfStaticOnlyButton(w) && !IsPartOfStaticOnlyButton(enterW)) {
 			m_IsStaticOnlyHovered = false;
 			UpdatePlacementTypeButtons();
+		}
+
+		if (IsPartOfSourceFilterConsoleButton(w) && !IsPartOfSourceFilterConsoleButton(enterW)) {
+			m_IsSourceFilterConsoleHovered = false;
+			UpdateSourceFilterPopupButtons();
+		}
+
+		if (IsPartOfSourceFilterPCButton(w) && !IsPartOfSourceFilterPCButton(enterW)) {
+			m_IsSourceFilterPCHovered = false;
+			UpdateSourceFilterPopupButtons();
+		}
+
+		if (IsPartOfSourceFilterRevertButton(w) && !IsPartOfSourceFilterRevertButton(enterW)) {
+			m_IsSourceFilterRevertHovered = false;
+			UpdateSourceFilterPopupButtons();
+		}
+
+		if (IsPartOfSourceFilterSaveButton(w) && !IsPartOfSourceFilterSaveButton(enterW)) {
+			m_IsSourceFilterSaveHovered = false;
+			UpdateSourceFilterPopupButtons();
 		}
 
 		return super.OnMouseLeave(w, enterW, x, y);
@@ -1237,15 +1393,467 @@ class EditorBuildMenuView: ScriptView
 		QueueRender(true, false, false);
 	}
 
-	protected void SetSourceFilter(int filter_value)
+	protected void ToggleSourceFilterPopup()
 	{
-		if (m_FilterState.SourceFilter == filter_value) {
+		if (m_IsSourceFilterPopupOpen) {
+			CloseSourceFilterPopup();
 			return;
 		}
 
-		m_FilterState.SourceFilter = filter_value;
+		OpenSourceFilterPopup();
+	}
+
+	protected void OpenSourceFilterPopup()
+	{
+		if (m_IsSourceFilterPopupOpen) {
+			return;
+		}
+
+		RevertPendingSourceFilters();
+		BuildSourceFilterRows();
+		UpdateSourceFilterPopup();
+		if (BuildMenuSourceFilterPopupRoot) {
+			BuildMenuSourceFilterPopupRoot.Show(true);
+		}
+
+		m_IsSourceFilterPopupOpen = true;
+		UpdateSourceFilterButton();
+	}
+
+	protected void HideSourceFilterPopup()
+	{
+		if (BuildMenuSourceFilterPopupRoot) {
+			BuildMenuSourceFilterPopupRoot.Show(false);
+		}
+	}
+
+	protected void CloseSourceFilterPopup()
+	{
+		if (!m_IsSourceFilterPopupOpen) {
+			HideSourceFilterPopup();
+			return;
+		}
+
+		m_IsSourceFilterConsoleHovered = false;
+		m_IsSourceFilterPCHovered = false;
+		m_IsSourceFilterRevertHovered = false;
+		m_IsSourceFilterSaveHovered = false;
+		m_IsSourceFilterPopupOpen = false;
+		HideSourceFilterPopup();
+		UpdateSourceFilterButton();
+	}
+
+	protected void RevertPendingSourceFilters()
+	{
+		m_PendingPlatformFilter = m_FilterState.PlatformFilter;
+		m_PendingSelectedSourceIds = CopyStringArray(m_FilterState.SelectedSourceIds);
+		if (m_PendingPlatformFilter == EditorBuildMenuPlatformFilter.EDITOR_BUILD_MENU_PLATFORM_FILTER_CONSOLE) {
+			m_PendingSelectedSourceIds.Clear();
+			m_PendingSelectedSourceIds.Insert("vanilla");
+		}
+		NormalizeSelectedSourceIds(m_PendingSelectedSourceIds, true);
+		UpdateSourceFilterPopup();
+	}
+
+	protected void SetPendingPlatformFilter(int filter_value)
+	{
+		if (m_PendingPlatformFilter == filter_value) {
+			return;
+		}
+
+		m_PendingPlatformFilter = filter_value;
+		if (m_PendingPlatformFilter == EditorBuildMenuPlatformFilter.EDITOR_BUILD_MENU_PLATFORM_FILTER_CONSOLE) {
+			m_PendingSelectedSourceIds.Clear();
+			m_PendingSelectedSourceIds.Insert("vanilla");
+		}
+		UpdateSourceFilterPopup();
+	}
+
+	protected void ApplyPendingSourceFilters()
+	{
+		NormalizeSelectedSourceIds(m_PendingSelectedSourceIds);
+
+		bool filters_changed = false;
+		if (m_FilterState.PlatformFilter != m_PendingPlatformFilter) {
+			filters_changed = true;
+		}
+
+		if (!AreStringArraysEqual(m_FilterState.SelectedSourceIds, m_PendingSelectedSourceIds)) {
+			filters_changed = true;
+		}
+
+		m_FilterState.PlatformFilter = m_PendingPlatformFilter;
+		m_FilterState.SelectedSourceIds = CopyStringArray(m_PendingSelectedSourceIds);
+
+		CloseSourceFilterPopup();
+		UpdateSourceFilterButton();
+		if (!filters_changed) {
+			return;
+		}
+
 		QueuePersistentStateSave();
 		QueueRender(true, false, false);
+	}
+
+	void OnSourceFilterRowChanged(EditorBuildMenuSourceFilterRow row, bool checked)
+	{
+		if (!row || m_PendingPlatformFilter == EditorBuildMenuPlatformFilter.EDITOR_BUILD_MENU_PLATFORM_FILTER_CONSOLE) {
+			return;
+		}
+
+		string source_id = row.GetSourceId();
+		int existing_index = m_PendingSelectedSourceIds.Find(source_id);
+		if (checked) {
+			if (existing_index == -1) {
+				m_PendingSelectedSourceIds.Insert(source_id);
+			}
+		} else if (existing_index != -1) {
+			if (m_PendingSelectedSourceIds.Count() <= 1) {
+				UpdateSourceFilterRows();
+				return;
+			}
+
+			m_PendingSelectedSourceIds.Remove(existing_index);
+		}
+	}
+
+	protected void NormalizeAppliedSourceFilters()
+	{
+		NormalizeSelectedSourceIds(m_FilterState.SelectedSourceIds, true);
+	}
+
+	protected void NormalizeSelectedSourceIds(array<string> source_ids, bool restore_defaults = false)
+	{
+		if (!source_ids) {
+			return;
+		}
+
+		ref array<string> normalized_ids = {};
+		array<ref EditorBuildMenuSourceData> available_sources = {};
+		if (m_Catalog) {
+			available_sources = m_Catalog.GetSources();
+		}
+
+		foreach (EditorBuildMenuSourceData available_source: available_sources) {
+			if (!available_source) {
+				continue;
+			}
+
+			if (source_ids.Find(available_source.Id) != -1) {
+				normalized_ids.Insert(available_source.Id);
+			}
+		}
+
+		if (restore_defaults && normalized_ids.Count() == 0) {
+			foreach (EditorBuildMenuSourceData default_source: available_sources) {
+				if (!default_source) {
+					continue;
+				}
+
+				normalized_ids.Insert(default_source.Id);
+			}
+		}
+
+		source_ids.Clear();
+		foreach (string normalized_id: normalized_ids) {
+			source_ids.Insert(normalized_id);
+		}
+	}
+
+	protected void BuildSourceFilterRows()
+	{
+		ClearSourceFilterRows();
+		if (!BuildMenuSourceFilterPopupList || !m_Catalog) {
+			return;
+		}
+
+		array<ref EditorBuildMenuSourceData> sources = m_Catalog.GetSources();
+		foreach (EditorBuildMenuSourceData source: sources) {
+			if (!source) {
+				continue;
+			}
+
+			EditorBuildMenuSourceFilterRow row = new EditorBuildMenuSourceFilterRow(this, source.Id, source.Label);
+			m_SourceFilterRows.Insert(row);
+			BuildMenuSourceFilterPopupList.AddChild(row.GetLayoutRoot());
+		}
+	}
+
+	protected void ClearSourceFilterRows()
+	{
+		for (int i = m_SourceFilterRows.Count() - 1; i >= 0; i--) {
+			delete m_SourceFilterRows[i];
+		}
+
+		m_SourceFilterRows.Clear();
+	}
+
+	protected void UpdateSourceFilterPopup()
+	{
+		UpdateSourceFilterRows();
+		LayoutSourceFilterPopup();
+		UpdateSourceFilterPopupButtons();
+		UpdateSourceFilterButton();
+	}
+
+	protected void UpdateSourceFilterRows()
+	{
+		foreach (EditorBuildMenuSourceFilterRow row: m_SourceFilterRows) {
+			if (!row) {
+				continue;
+			}
+
+			bool enabled = true;
+			bool checked = m_PendingSelectedSourceIds.Find(row.GetSourceId()) != -1;
+			if (m_PendingPlatformFilter == EditorBuildMenuPlatformFilter.EDITOR_BUILD_MENU_PLATFORM_FILTER_CONSOLE && row.GetSourceId() != "vanilla") {
+				enabled = false;
+				checked = false;
+			}
+
+			row.SetState(checked, enabled);
+		}
+	}
+
+	protected void LayoutSourceFilterPopup()
+	{
+		if (!BuildMenuSourceFilterPopupRoot || !BuildMenuSourceFilterPopupScroll || !BuildMenuSourceFilterPopupList || !BuildMenuSourceFilterRoot || !BuildMenuPanel) {
+			return;
+		}
+
+		float inner_width = SOURCE_FILTER_POPUP_WIDTH - SOURCE_FILTER_POPUP_PADDING * 2;
+		float list_height = m_SourceFilterRows.Count() * SOURCE_FILTER_ROW_HEIGHT;
+		float button_width = (inner_width - SOURCE_FILTER_BUTTON_GAP) * 0.5;
+		float fixed_height = SOURCE_FILTER_POPUP_PADDING + SOURCE_FILTER_POPUP_GAP + 1 + SOURCE_FILTER_POPUP_GAP + SOURCE_FILTER_BUTTON_HEIGHT + SOURCE_FILTER_BUTTON_GAP + SOURCE_FILTER_BUTTON_HEIGHT + SOURCE_FILTER_POPUP_PADDING;
+
+		float panel_screen_width;
+		float panel_screen_height;
+		float panel_screen_x;
+		float panel_screen_y;
+		float button_screen_x;
+		float button_screen_y;
+		BuildMenuPanel.GetScreenSize(panel_screen_width, panel_screen_height);
+		BuildMenuPanel.GetScreenPos(panel_screen_x, panel_screen_y);
+		BuildMenuSourceFilterRoot.GetScreenPos(button_screen_x, button_screen_y);
+
+		float max_popup_height = button_screen_y - panel_screen_y - SOURCE_FILTER_POPUP_GAP;
+		float max_list_height = max_popup_height - fixed_height;
+		if (max_list_height < 0) {
+			max_list_height = 0;
+		}
+
+		float list_view_height = list_height;
+		if (list_view_height > max_list_height) {
+			list_view_height = max_list_height;
+		}
+
+		BuildMenuSourceFilterPopupScroll.SetPos(SOURCE_FILTER_POPUP_PADDING, SOURCE_FILTER_POPUP_PADDING);
+		BuildMenuSourceFilterPopupScroll.SetSize(inner_width, list_view_height);
+		BuildMenuSourceFilterPopupList.SetPos(0, 0);
+		BuildMenuSourceFilterPopupList.SetSize(inner_width, list_height);
+
+		float row_y = 0;
+		foreach (EditorBuildMenuSourceFilterRow row: m_SourceFilterRows) {
+			if (!row) {
+				continue;
+			}
+
+			row.GetLayoutRoot().SetPos(0, row_y);
+			row.GetLayoutRoot().SetSize(inner_width, SOURCE_FILTER_ROW_HEIGHT);
+			row_y += SOURCE_FILTER_ROW_HEIGHT;
+		}
+
+		float divider_y = SOURCE_FILTER_POPUP_PADDING + list_view_height + SOURCE_FILTER_POPUP_GAP;
+		if (BuildMenuSourceFilterPopupDivider) {
+			BuildMenuSourceFilterPopupDivider.SetPos(SOURCE_FILTER_POPUP_PADDING, divider_y);
+			BuildMenuSourceFilterPopupDivider.SetSize(inner_width, 1);
+		}
+
+		float top_buttons_y = divider_y + 1 + SOURCE_FILTER_POPUP_GAP;
+		float bottom_buttons_y = top_buttons_y + SOURCE_FILTER_BUTTON_HEIGHT + SOURCE_FILTER_BUTTON_GAP;
+		SetSourceFilterPopupButtonLayout(BuildMenuSourceFilterConsoleRoot, SOURCE_FILTER_POPUP_PADDING, top_buttons_y, button_width, SOURCE_FILTER_BUTTON_HEIGHT);
+		SetSourceFilterPopupButtonLayout(BuildMenuSourceFilterPCRoot, SOURCE_FILTER_POPUP_PADDING + button_width + SOURCE_FILTER_BUTTON_GAP, top_buttons_y, button_width, SOURCE_FILTER_BUTTON_HEIGHT);
+		SetSourceFilterPopupButtonLayout(BuildMenuSourceFilterRevertRoot, SOURCE_FILTER_POPUP_PADDING, bottom_buttons_y, button_width, SOURCE_FILTER_BUTTON_HEIGHT);
+		SetSourceFilterPopupButtonLayout(BuildMenuSourceFilterSaveRoot, SOURCE_FILTER_POPUP_PADDING + button_width + SOURCE_FILTER_BUTTON_GAP, bottom_buttons_y, button_width, SOURCE_FILTER_BUTTON_HEIGHT);
+
+		float popup_height = bottom_buttons_y + SOURCE_FILTER_BUTTON_HEIGHT + SOURCE_FILTER_POPUP_PADDING;
+		BuildMenuSourceFilterPopupRoot.SetSize(SOURCE_FILTER_POPUP_WIDTH, popup_height);
+
+		float local_x = button_screen_x - panel_screen_x;
+		float local_y = button_screen_y - panel_screen_y - popup_height - 6;
+		float max_local_x = panel_screen_width - SOURCE_FILTER_POPUP_WIDTH;
+		if (max_local_x < 0) {
+			max_local_x = 0;
+		}
+
+		if (local_x > max_local_x) {
+			local_x = max_local_x;
+		}
+
+		if (local_x < 0) {
+			local_x = 0;
+		}
+
+		if (local_y < 0) {
+			local_y = 0;
+		}
+
+		float max_local_y = panel_screen_height - popup_height;
+		if (max_local_y < 0) {
+			max_local_y = 0;
+		}
+
+		if (local_y > max_local_y) {
+			local_y = max_local_y;
+		}
+
+		BuildMenuSourceFilterPopupRoot.SetPos(local_x, local_y);
+		BuildMenuSourceFilterPopupScroll.VScrollToPos(0);
+	}
+
+	protected void SetSourceFilterPopupButtonLayout(Widget root, float x, float y, float width, float height)
+	{
+		if (!root) {
+			return;
+		}
+
+		root.SetPos(x, y);
+		root.SetSize(width, height);
+	}
+
+	protected void InitializeSourceFilterIcons()
+	{
+		if (BuildMenuSourceFilterIcon) {
+			BuildMenuSourceFilterIcon.SetImage(3);
+		}
+
+		if (BuildMenuSourceFilterConsoleIcon) {
+			BuildMenuSourceFilterConsoleIcon.SetImage(3);
+		}
+
+		if (BuildMenuSourceFilterPCIcon) {
+			BuildMenuSourceFilterPCIcon.SetImage(3);
+		}
+
+		if (BuildMenuSourceFilterRevertIcon) {
+			BuildMenuSourceFilterRevertIcon.SetImage(3);
+		}
+
+		if (BuildMenuSourceFilterSaveIcon) {
+			BuildMenuSourceFilterSaveIcon.SetImage(3);
+		}
+	}
+
+	protected void UpdateSourceFilterButton()
+	{
+		bool selected = m_IsSourceFilterPopupOpen || IsSourceFilterActive();
+
+		if (BuildMenuSourceFilterRoot) {
+			if (selected) {
+				BuildMenuSourceFilterRoot.SetColor(GetEditor().GetSettings().SelectionColor);
+			} else if (m_IsSourceFilterHovered) {
+				BuildMenuSourceFilterRoot.SetColor(GetEditor().GetSettings().HighlightColor);
+			} else {
+				BuildMenuSourceFilterRoot.SetColor(ARGB(255, 41, 43, 51));
+			}
+		}
+
+		if (BuildMenuSourceFilterIcon) {
+			if (selected || m_IsSourceFilterHovered) {
+				BuildMenuSourceFilterIcon.SetColor(ARGB(255, 255, 255, 255));
+			} else {
+				BuildMenuSourceFilterIcon.SetColor(ARGB(235, 201, 208, 216));
+			}
+		}
+	}
+
+	protected void UpdateSourceFilterPopupButtons()
+	{
+		UpdateSourceFilterPopupButton(BuildMenuSourceFilterConsoleRoot, BuildMenuSourceFilterConsoleIcon, m_IsSourceFilterConsoleHovered, m_PendingPlatformFilter == EditorBuildMenuPlatformFilter.EDITOR_BUILD_MENU_PLATFORM_FILTER_CONSOLE);
+		UpdateSourceFilterPopupButton(BuildMenuSourceFilterPCRoot, BuildMenuSourceFilterPCIcon, m_IsSourceFilterPCHovered, m_PendingPlatformFilter == EditorBuildMenuPlatformFilter.EDITOR_BUILD_MENU_PLATFORM_FILTER_PC);
+		UpdateSourceFilterPopupButton(BuildMenuSourceFilterRevertRoot, BuildMenuSourceFilterRevertIcon, m_IsSourceFilterRevertHovered, false);
+		UpdateSourceFilterPopupButton(BuildMenuSourceFilterSaveRoot, BuildMenuSourceFilterSaveIcon, m_IsSourceFilterSaveHovered, false);
+	}
+
+	protected void UpdateSourceFilterPopupButton(Widget root, ImageWidget icon, bool hovered, bool selected)
+	{
+		if (root) {
+			if (selected) {
+				root.SetColor(GetEditor().GetSettings().SelectionColor);
+			} else if (hovered) {
+				root.SetColor(GetEditor().GetSettings().HighlightColor);
+			} else {
+				root.SetColor(ARGB(255, 41, 43, 51));
+			}
+		}
+
+		if (icon) {
+			icon.SetColor(ARGB(255, 255, 255, 255));
+		}
+	}
+
+	protected bool IsSourceFilterActive()
+	{
+		if (m_FilterState.PlatformFilter != EditorBuildMenuPlatformFilter.EDITOR_BUILD_MENU_PLATFORM_FILTER_PC) {
+			return true;
+		}
+
+		return !AreStringArraysEqual(m_FilterState.SelectedSourceIds, GetAllSourceIds());
+	}
+
+	protected ref array<string> GetAllSourceIds()
+	{
+		ref array<string> source_ids = {};
+		if (!m_Catalog) {
+			return source_ids;
+		}
+
+		array<ref EditorBuildMenuSourceData> sources = m_Catalog.GetSources();
+		foreach (EditorBuildMenuSourceData source: sources) {
+			if (!source) {
+				continue;
+			}
+
+			source_ids.Insert(source.Id);
+		}
+
+		return source_ids;
+	}
+
+	protected ref array<string> CopyStringArray(array<string> source)
+	{
+		ref array<string> copy = {};
+		if (!source) {
+			return copy;
+		}
+
+		foreach (string value: source) {
+			copy.Insert(value);
+		}
+
+		return copy;
+	}
+
+	protected bool AreStringArraysEqual(array<string> lhs, array<string> rhs)
+	{
+		if (!lhs && !rhs) {
+			return true;
+		}
+
+		if (!lhs || !rhs) {
+			return false;
+		}
+
+		if (lhs.Count() != rhs.Count()) {
+			return false;
+		}
+
+		foreach (string value: lhs) {
+			if (rhs.Find(value) == -1) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	protected void SetPlacementTypeFilter(int filter_value)
@@ -1292,7 +1900,7 @@ class EditorBuildMenuView: ScriptView
 		QueuePersistentStateSave();
 		GetLayoutRoot().Update();
 		BuildMenuScroll.Update();
-		UpdateSourceCycleLabel();
+		UpdateSourceFilterButton();
 		UpdatePlacementTypeButtons();
 		if (rebuild_tab_buttons) {
 			BuildTabButtons();
@@ -1347,21 +1955,6 @@ class EditorBuildMenuView: ScriptView
 		if (m_IsOpen) {
 			QueueRender(false, false, false);
 		}
-	}
-
-	protected void UpdateSourceCycleLabel()
-	{
-		int index = Math.Clamp(m_FilterState.SourceFilter, 0, s_SourceFilterLabels.Count() - 1);
-		if (BuildMenuSourceCycleLabel) {
-			BuildMenuSourceCycleLabel.SetText("Filter: " + s_SourceFilterLabels[index]);
-		}
-	}
-
-	protected void CycleSourceFilter()
-	{
-		int next = (m_FilterState.SourceFilter + 1) % 3;
-		SetSourceFilter(next);
-		UpdateSourceCycleLabel();
 	}
 
 	protected void UpdateSearchClearButton()
@@ -1597,9 +2190,10 @@ class EditorBuildMenuView: ScriptView
 		EditorBuildMenuFilterState state = new EditorBuildMenuFilterState();
 		state.TabId = m_FilterState.TabId;
 		state.SubcategoryId = m_FilterState.SubcategoryId;
-		state.SourceFilter = m_FilterState.SourceFilter;
+		state.PlatformFilter = m_FilterState.PlatformFilter;
 		state.PlacementTypeFilter = m_FilterState.PlacementTypeFilter;
 		state.FavoritesOnly = m_FilterState.FavoritesOnly;
+		state.SelectedSourceIds = CopyStringArray(m_FilterState.SelectedSourceIds);
 		state.SetSearchText(m_FilterState.SearchText);
 		return state;
 	}
@@ -1613,9 +2207,10 @@ class EditorBuildMenuView: ScriptView
 		EditorSettings settings = m_Editor.GetSettings();
 		settings.BuildMenuLastTabId = m_FilterState.TabId;
 		settings.BuildMenuLastSubtabId = m_FilterState.SubcategoryId;
-		settings.BuildMenuSourceFilter = m_FilterState.SourceFilter;
+		settings.BuildMenuPlatformFilter = m_FilterState.PlatformFilter;
 		settings.BuildMenuPlacementTypeFilter = m_FilterState.PlacementTypeFilter;
 		settings.BuildMenuFavoritesOnly = m_FilterState.FavoritesOnly;
+		settings.BuildMenuSelectedSources = CopyStringArray(m_FilterState.SelectedSourceIds);
 		settings.Save();
 		UpdateSavedStateSnapshot();
 	}
@@ -1641,7 +2236,7 @@ class EditorBuildMenuView: ScriptView
 			return true;
 		}
 
-		if (m_FilterState.SourceFilter != m_SavedSourceFilter) {
+		if (m_FilterState.PlatformFilter != m_SavedPlatformFilter) {
 			return true;
 		}
 
@@ -1653,6 +2248,10 @@ class EditorBuildMenuView: ScriptView
 			return true;
 		}
 
+		if (!AreStringArraysEqual(m_FilterState.SelectedSourceIds, m_SavedSelectedSourceIds)) {
+			return true;
+		}
+
 		return false;
 	}
 
@@ -1660,9 +2259,10 @@ class EditorBuildMenuView: ScriptView
 	{
 		m_SavedTabId = m_FilterState.TabId;
 		m_SavedSubcategoryId = m_FilterState.SubcategoryId;
-		m_SavedSourceFilter = m_FilterState.SourceFilter;
+		m_SavedPlatformFilter = m_FilterState.PlatformFilter;
 		m_SavedPlacementTypeFilter = m_FilterState.PlacementTypeFilter;
 		m_SavedFavoritesOnly = m_FilterState.FavoritesOnly;
+		m_SavedSelectedSourceIds = CopyStringArray(m_FilterState.SelectedSourceIds);
 	}
 
 	protected void LayoutFilterButtons(array<ref EditorBuildMenuFilterButton> buttons, Widget container)
@@ -1734,9 +2334,14 @@ class EditorBuildMenuView: ScriptView
 
 	protected bool IsDescendantOfBuildMenu(Widget widget)
 	{
+		return IsDescendantOfWidget(widget, BuildMenuOverlay);
+	}
+
+	protected bool IsDescendantOfWidget(Widget widget, Widget parent_widget)
+	{
 		Widget current = widget;
 		while (current) {
-			if (current == BuildMenuOverlay) {
+			if (current == parent_widget) {
 				return true;
 			}
 
@@ -1744,48 +2349,51 @@ class EditorBuildMenuView: ScriptView
 		}
 
 		return false;
+	}
+
+	protected bool IsPartOfSourceFilterButton(Widget widget)
+	{
+		return IsDescendantOfWidget(widget, BuildMenuSourceFilterRoot);
+	}
+
+	protected bool IsPartOfSourceFilterPopup(Widget widget)
+	{
+		return IsDescendantOfWidget(widget, BuildMenuSourceFilterPopupRoot);
+	}
+
+	protected bool IsPartOfSourceFilterConsoleButton(Widget widget)
+	{
+		return IsDescendantOfWidget(widget, BuildMenuSourceFilterConsoleRoot);
+	}
+
+	protected bool IsPartOfSourceFilterPCButton(Widget widget)
+	{
+		return IsDescendantOfWidget(widget, BuildMenuSourceFilterPCRoot);
+	}
+
+	protected bool IsPartOfSourceFilterRevertButton(Widget widget)
+	{
+		return IsDescendantOfWidget(widget, BuildMenuSourceFilterRevertRoot);
+	}
+
+	protected bool IsPartOfSourceFilterSaveButton(Widget widget)
+	{
+		return IsDescendantOfWidget(widget, BuildMenuSourceFilterSaveRoot);
 	}
 
 	protected bool IsPartOfFavoritesOnlyButton(Widget widget)
 	{
-		Widget current = widget;
-		while (current) {
-			if (current == BuildMenuFavoritesOnlyRoot) {
-				return true;
-			}
-
-			current = current.GetParent();
-		}
-
-		return false;
+		return IsDescendantOfWidget(widget, BuildMenuFavoritesOnlyRoot);
 	}
 
 	protected bool IsPartOfConfigOnlyButton(Widget widget)
 	{
-		Widget current = widget;
-		while (current) {
-			if (current == BuildMenuConfigOnlyRoot) {
-				return true;
-			}
-
-			current = current.GetParent();
-		}
-
-		return false;
+		return IsDescendantOfWidget(widget, BuildMenuConfigOnlyRoot);
 	}
 
 	protected bool IsPartOfStaticOnlyButton(Widget widget)
 	{
-		Widget current = widget;
-		while (current) {
-			if (current == BuildMenuStaticOnlyRoot) {
-				return true;
-			}
-
-			current = current.GetParent();
-		}
-
-		return false;
+		return IsDescendantOfWidget(widget, BuildMenuStaticOnlyRoot);
 	}
 
 	protected void CreateTabButton(string id, string label)
