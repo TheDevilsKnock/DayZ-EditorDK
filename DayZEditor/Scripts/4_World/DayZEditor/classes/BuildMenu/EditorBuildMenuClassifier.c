@@ -424,10 +424,6 @@ class EditorBuildMenuInference
 			return CreateResult("structures", "misc", fallback_section, GetSourceKind(placeable, normalized_path), GetSourceId(placeable, normalized_path), GetSourceLabel(placeable, normalized_path));
 		}
 
-		if (normalized_path != string.Empty && (normalized_path.IndexOf("dz/") == 0 || normalized_path.IndexOf("dz_") == 0)) {
-			return CreateResult("misc", "unknown", fallback_section, DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA, "vanilla", "Vanilla");
-		}
-
 		return CreateResult("misc", "unknown", fallback_section, GetSourceKind(placeable, normalized_path), GetSourceId(placeable, normalized_path), GetSourceLabel(placeable, normalized_path));
 	}
 
@@ -930,8 +926,9 @@ class EditorBuildMenuInference
 			return DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED;
 		}
 
-		if (explicit_source_id == "vanilla" || explicit_source_kind == DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA) {
-			return DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA;
+		string config_source_path = GetConfigSourcePath(placeable);
+		if (ShouldUseConfigSourcePath(config_source_path, explicit_source_id, explicit_source_kind)) {
+			return DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED;
 		}
 
 		if (explicit_source_id != string.Empty || explicit_source_label != string.Empty || explicit_source_kind != -1) {
@@ -942,7 +939,8 @@ class EditorBuildMenuInference
 			return DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED;
 		}
 
-		if (normalized_path != string.Empty && normalized_path.IndexOf("dz/") == 0) {
+		string source_path = GetSourcePath(placeable, normalized_path);
+		if (IsVanillaSourcePath(source_path)) {
 			return DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA;
 		}
 
@@ -959,6 +957,14 @@ class EditorBuildMenuInference
 			return "builder_items";
 		}
 
+		string config_source_path = GetConfigSourcePath(placeable);
+		if (ShouldUseConfigSourcePath(config_source_path, explicit_source_id, explicit_source_kind)) {
+			string config_path_root = GetPathRoot(config_source_path);
+			if (config_path_root != string.Empty) {
+				return NormalizeId(config_path_root);
+			}
+		}
+
 		if (explicit_source_id != string.Empty) {
 			return NormalizeId(explicit_source_id);
 		}
@@ -971,11 +977,12 @@ class EditorBuildMenuInference
 			return NormalizeId(explicit_source_label);
 		}
 
-		if (normalized_path != string.Empty && normalized_path.IndexOf("dz/") == 0) {
+		string source_path = GetSourcePath(placeable, normalized_path);
+		if (IsVanillaSourcePath(source_path)) {
 			return "vanilla";
 		}
 
-		string path_root = GetPathRoot(normalized_path);
+		string path_root = GetPathRoot(source_path);
 		if (path_root != string.Empty) {
 			return NormalizeId(path_root);
 		}
@@ -993,6 +1000,14 @@ class EditorBuildMenuInference
 			return "Builder Items";
 		}
 
+		string config_source_path = GetConfigSourcePath(placeable);
+		if (ShouldUseConfigSourcePath(config_source_path, explicit_source_id, explicit_source_kind)) {
+			string config_path_root = GetPathRoot(config_source_path);
+			if (config_path_root != string.Empty) {
+				return FormatLabel(config_path_root);
+			}
+		}
+
 		if (explicit_source_label != string.Empty) {
 			return explicit_source_label;
 		}
@@ -1005,11 +1020,12 @@ class EditorBuildMenuInference
 			return FormatLabel(explicit_source_id);
 		}
 
-		if (normalized_path != string.Empty && normalized_path.IndexOf("dz/") == 0) {
+		string source_path = GetSourcePath(placeable, normalized_path);
+		if (IsVanillaSourcePath(source_path)) {
 			return "Vanilla";
 		}
 
-		string path_root = GetPathRoot(normalized_path);
+		string path_root = GetPathRoot(source_path);
 		if (path_root != string.Empty) {
 			return FormatLabel(path_root);
 		}
@@ -1044,6 +1060,94 @@ class EditorBuildMenuInference
 		}
 
 		return false;
+	}
+
+	protected static bool ShouldUseConfigSourcePath(string config_source_path, string explicit_source_id, int explicit_source_kind)
+	{
+		if (config_source_path == string.Empty) {
+			return false;
+		}
+
+		if (explicit_source_id == string.Empty && explicit_source_kind == -1) {
+			return true;
+		}
+
+		if (explicit_source_id == "vanilla") {
+			return true;
+		}
+
+		return explicit_source_kind == DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA;
+	}
+
+	protected static string GetSourcePath(EditorPlaceableItem placeable, string normalized_path)
+	{
+		string config_source_path = GetConfigSourcePath(placeable);
+		if (config_source_path != string.Empty) {
+			return config_source_path;
+		}
+
+		return normalized_path;
+	}
+
+	protected static string GetConfigSourcePath(EditorPlaceableItem placeable)
+	{
+		if (!placeable || placeable.Category != EditorPlaceableItemCategory.CONFIG) {
+			return string.Empty;
+		}
+
+		string config_path = string.Format("%1 %2", placeable.Path, placeable.Type);
+		string texture_path = GetConfigArraySourcePath(config_path + " hiddenSelectionsTextures");
+		if (texture_path != string.Empty) {
+			return texture_path;
+		}
+
+		string material_path = GetConfigArraySourcePath(config_path + " hiddenSelectionsMaterials");
+		if (material_path != string.Empty) {
+			return material_path;
+		}
+
+		return string.Empty;
+	}
+
+	protected static string GetConfigArraySourcePath(string config_path)
+	{
+		if (config_path == string.Empty || !GetGame().ConfigIsExisting(config_path)) {
+			return string.Empty;
+		}
+
+		ref array<string> values = {};
+		GetGame().ConfigGetTextArray(config_path, values);
+		foreach (string value: values) {
+			string normalized_value = NormalizeDedupePath(value);
+			if (normalized_value == string.Empty) {
+				continue;
+			}
+
+			if (normalized_value.IndexOf("/") == -1) {
+				continue;
+			}
+
+			if (IsVanillaSourcePath(normalized_value)) {
+				continue;
+			}
+
+			return normalized_value;
+		}
+
+		return string.Empty;
+	}
+
+	protected static bool IsVanillaSourcePath(string normalized_path)
+	{
+		if (normalized_path == string.Empty) {
+			return false;
+		}
+
+		if (normalized_path.IndexOf("dz/") == 0) {
+			return true;
+		}
+
+		return normalized_path.IndexOf("dz_") == 0;
 	}
 
 	protected static string GetPathRoot(string normalized_path)
