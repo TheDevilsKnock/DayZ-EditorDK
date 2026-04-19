@@ -846,6 +846,11 @@ class EditorBuildMenuSectionView: ScriptView
 		return m_Height;
 	}
 
+	bool IsCollapsed()
+	{
+		return m_IsCollapsed;
+	}
+
 	override bool OnClick(Widget w, int x, int y, int button)
 	{
 		if (button == MouseState.LEFT && IsPartOfCollapseButton(w)) {
@@ -1032,7 +1037,8 @@ class EditorBuildMenuView: ScriptView
 {
 	static const float FILTER_BUTTON_SPACING = 6;
 	static const float FILTER_ROW_VERTICAL_PADDING = 4;
-	static const float SECTION_SPACING = 20;
+	static const float SECTION_SPACING = 16;
+	static const float COLLAPSED_SECTION_SPACING = 8;
 	static const float SOURCE_FILTER_POPUP_WIDTH = 212;
 	static const float SOURCE_FILTER_POPUP_PADDING = 8;
 	static const float SOURCE_FILTER_ROW_HEIGHT = 24;
@@ -2176,7 +2182,12 @@ class EditorBuildMenuView: ScriptView
 			section_view.SetPosition(0, current_y);
 			m_SectionViews.Insert(section_view);
 			BuildMenuSectionList.AddChild(section_view.GetLayoutRoot());
-			current_y += section_view.GetHeight() + SECTION_SPACING;
+
+			if (section_view.IsCollapsed()) {
+				current_y += section_view.GetHeight() + COLLAPSED_SECTION_SPACING;
+			} else {
+				current_y += section_view.GetHeight() + SECTION_SPACING;
+			}
 		}
 
 		BuildMenuSectionList.SetSize(content_width, current_y);
