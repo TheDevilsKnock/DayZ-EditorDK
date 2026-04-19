@@ -23,7 +23,7 @@ PanelWidgetClass BuildMenuSourceFilterRowRoot {
   TextWidgetClass BuildMenuSourceFilterRowLabel {
    visible 1
    ignorepointer 1
-   position 28 0
+   position 25 -2
    size 168 24
    hexactpos 1
    vexactpos 1
@@ -32,6 +32,7 @@ PanelWidgetClass BuildMenuSourceFilterRowRoot {
    text "Source"
    font "gui/fonts/sdf_MetronBook24"
    "exact text size" 13
+   text_proportion 0.75
    "text valign" center
   }
  }

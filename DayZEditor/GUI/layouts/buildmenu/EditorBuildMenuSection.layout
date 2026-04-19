@@ -12,7 +12,7 @@ PanelWidgetClass BuildMenuSectionRoot {
    visible 1
    clipchildren 1
    ignorepointer 1
-   color 0.1255 0.1412 0.1765 0.94
+   color 0.125 0.141 0.176 0.94
    position 0 0
    size 420 22
    hexactpos 1
@@ -32,6 +32,7 @@ PanelWidgetClass BuildMenuSectionRoot {
      text "SECTION"
      font "gui/fonts/sdf_MetronBook24"
      "exact text size" 14
+     text_proportion 0.75
      "text valign" center
     }
    }
