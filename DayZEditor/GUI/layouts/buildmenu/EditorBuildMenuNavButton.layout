@@ -1,4 +1,4 @@
-PanelWidgetClass BuildMenuFilterButtonRoot {
+PanelWidgetClass BuildMenuNavButtonRoot {
  visible 1
  clipchildren 1
  ignorepointer 0
@@ -10,7 +10,7 @@ PanelWidgetClass BuildMenuFilterButtonRoot {
  vexactsize 1
  style rover_sim_colorable
  {
-  TextWidgetClass BuildMenuFilterButtonLabel {
+  TextWidgetClass BuildMenuNavButtonLabel {
    ignorepointer 1
    size 1 1
    halign center_ref
@@ -28,7 +28,7 @@ PanelWidgetClass BuildMenuFilterButtonRoot {
    "text halign" center
    "text valign" center
   }
-  ButtonWidgetClass BuildMenuFilterButton {
+  ButtonWidgetClass BuildMenuNavButton {
    visible 1
    clipchildren 0
    ignorepointer 0

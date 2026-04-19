@@ -1,10 +1,10 @@
-enum EditorBuildMenuFilterButtonType
+enum EditorBuildMenuNavButtonType
 {
-	EDITOR_BUILD_MENU_FILTER_TAB = 0,
-	EDITOR_BUILD_MENU_FILTER_SUBCATEGORY = 1
+	EDITOR_BUILD_MENU_NAV_TAB = 0,
+	EDITOR_BUILD_MENU_NAV_SUBCATEGORY = 1
 }
 
-class EditorBuildMenuFilterButton: ScriptView
+class EditorBuildMenuNavButton: ScriptView
 {
 	static const float MIN_WIDTH = 82;
 	static const float HEIGHT = 26;
@@ -16,17 +16,17 @@ class EditorBuildMenuFilterButton: ScriptView
 	protected bool m_IsSelected;
 	protected bool m_IsHovered;
 
-	Widget BuildMenuFilterButtonRoot;
-	ButtonWidget BuildMenuFilterButton;
-	TextWidget BuildMenuFilterButtonLabel;
+	Widget BuildMenuNavButtonRoot;
+	ButtonWidget BuildMenuNavButton;
+	TextWidget BuildMenuNavButtonLabel;
 
-	void EditorBuildMenuFilterButton(EditorBuildMenuView owner, string label, int button_type, string id = string.Empty)
+	void EditorBuildMenuNavButton(EditorBuildMenuView owner, string label, int button_type, string id = string.Empty)
 	{
 		m_Owner = owner;
 		m_Id = id;
 		m_ButtonType = button_type;
 
-		BuildMenuFilterButtonLabel.SetText(label);
+		BuildMenuNavButtonLabel.SetText(label);
 		ResizeToContent();
 	}
 
@@ -39,14 +39,14 @@ class EditorBuildMenuFilterButton: ScriptView
 	protected void UpdateVisualState()
 	{
 		if (m_IsSelected) {
-			BuildMenuFilterButtonRoot.SetColor(GetEditor().GetSettings().SelectionColor);
-			BuildMenuFilterButtonLabel.SetColor(ARGB(255, 255, 255, 255));
+			BuildMenuNavButtonRoot.SetColor(GetEditor().GetSettings().SelectionColor);
+			BuildMenuNavButtonLabel.SetColor(ARGB(255, 255, 255, 255));
 		} else if (m_IsHovered) {
-			BuildMenuFilterButtonRoot.SetColor(GetEditor().GetSettings().HighlightColor);
-			BuildMenuFilterButtonLabel.SetColor(ARGB(255, 255, 255, 255));
+			BuildMenuNavButtonRoot.SetColor(GetEditor().GetSettings().HighlightColor);
+			BuildMenuNavButtonLabel.SetColor(ARGB(255, 255, 255, 255));
 		} else {
-			BuildMenuFilterButtonRoot.SetColor(ARGB(230, 43, 46, 52));
-			BuildMenuFilterButtonLabel.SetColor(ARGB(235, 201, 208, 216));
+			BuildMenuNavButtonRoot.SetColor(ARGB(230, 43, 46, 52));
+			BuildMenuNavButtonLabel.SetColor(ARGB(235, 201, 208, 216));
 		}
 	}
 
@@ -63,35 +63,35 @@ class EditorBuildMenuFilterButton: ScriptView
 	void ResizeToContent()
 	{
 		int label_width, label_height;
-		BuildMenuFilterButtonLabel.GetTextSize(label_width, label_height);
+		BuildMenuNavButtonLabel.GetTextSize(label_width, label_height);
 
 		float button_width = label_width + HORIZONTAL_PADDING;
 		if (button_width < MIN_WIDTH) {
 			button_width = MIN_WIDTH;
 		}
 
-		BuildMenuFilterButtonRoot.SetSize(button_width, HEIGHT);
-		BuildMenuFilterButton.SetSize(button_width, HEIGHT);
+		BuildMenuNavButtonRoot.SetSize(button_width, HEIGHT);
+		BuildMenuNavButton.SetSize(button_width, HEIGHT);
 	}
 
 	float GetWidth()
 	{
 		float width, height;
-		BuildMenuFilterButtonRoot.GetSize(width, height);
+		BuildMenuNavButtonRoot.GetSize(width, height);
 		return width;
 	}
 
 	float GetHeight()
 	{
 		float width, height;
-		BuildMenuFilterButtonRoot.GetSize(width, height);
+		BuildMenuNavButtonRoot.GetSize(width, height);
 		return height;
 	}
 
 	override bool OnClick(Widget w, int x, int y, int button)
 	{
-		if (w == BuildMenuFilterButton && button == MouseState.LEFT) {
-			m_Owner.OnFilterButtonPressed(this);
+		if (w == BuildMenuNavButton && button == MouseState.LEFT) {
+			m_Owner.OnNavButtonPressed(this);
 			return true;
 		}
 
@@ -120,7 +120,7 @@ class EditorBuildMenuFilterButton: ScriptView
 
 	override string GetLayoutFile()
 	{
-		return "DayZEditor/gui/layouts/buildmenu/EditorBuildMenuFilterButton.layout";
+		return "DayZEditor/gui/layouts/buildmenu/EditorBuildMenuNavButton.layout";
 	}
 
 	protected override bool UseUpdateLoop()
@@ -942,8 +942,8 @@ class EditorBuildMenuView: ScriptView
 	protected ref EditorBuildMenuFilterState m_FilterState = new EditorBuildMenuFilterState();
 	protected ref EditorBuildMenuPreviewPool m_PreviewPool = new EditorBuildMenuPreviewPool();
 
-	protected ref array<ref EditorBuildMenuFilterButton> m_TabButtons = {};
-	protected ref array<ref EditorBuildMenuFilterButton> m_SubcategoryButtons = {};
+	protected ref array<ref EditorBuildMenuNavButton> m_TabButtons = {};
+	protected ref array<ref EditorBuildMenuNavButton> m_SubcategoryButtons = {};
 	protected ref array<ref EditorBuildMenuSectionView> m_SectionViews = {};
 	protected ref array<ref EditorBuildMenuSourceFilterRow> m_SourceFilterRows = {};
 	protected ref array<string> m_PendingSelectedSourceIds = {};
@@ -1128,19 +1128,19 @@ class EditorBuildMenuView: ScriptView
 		}
 	}
 
-	void OnFilterButtonPressed(EditorBuildMenuFilterButton button)
+	void OnNavButtonPressed(EditorBuildMenuNavButton button)
 	{
 		if (m_IsSourceFilterPopupOpen) {
 			CloseSourceFilterPopup();
 		}
 
 		switch (button.GetButtonType()) {
-			case EditorBuildMenuFilterButtonType.EDITOR_BUILD_MENU_FILTER_TAB: {
+			case EditorBuildMenuNavButtonType.EDITOR_BUILD_MENU_NAV_TAB: {
 				SelectTab(button.GetId());
 				break;
 			}
 
-			case EditorBuildMenuFilterButtonType.EDITOR_BUILD_MENU_FILTER_SUBCATEGORY: {
+			case EditorBuildMenuNavButtonType.EDITOR_BUILD_MENU_NAV_SUBCATEGORY: {
 				SelectSubcategory(button.GetId());
 				break;
 			}
@@ -2023,12 +2023,12 @@ class EditorBuildMenuView: ScriptView
 			CreateTabButton(tab.Id, tab.Label);
 		}
 
-		LayoutFilterButtons(m_TabButtons, BuildMenuTabRow);
+		LayoutNavButtons(m_TabButtons, BuildMenuTabRow);
 	}
 
 	protected void UpdateTabButtonSelection()
 	{
-		foreach (EditorBuildMenuFilterButton button: m_TabButtons) {
+		foreach (EditorBuildMenuNavButton button: m_TabButtons) {
 			if (button) {
 				button.SetSelected(button.GetId() == m_FilterState.TabId);
 			}
@@ -2037,7 +2037,7 @@ class EditorBuildMenuView: ScriptView
 
 	protected void UpdateSubcategoryButtonSelection()
 	{
-		foreach (EditorBuildMenuFilterButton button: m_SubcategoryButtons) {
+		foreach (EditorBuildMenuNavButton button: m_SubcategoryButtons) {
 			if (button) {
 				button.SetSelected(button.GetId() == m_FilterState.SubcategoryId);
 			}
@@ -2053,7 +2053,7 @@ class EditorBuildMenuView: ScriptView
 			}
 		}
 
-		LayoutFilterButtons(m_SubcategoryButtons, BuildMenuSubcategoryRow);
+		LayoutNavButtons(m_SubcategoryButtons, BuildMenuSubcategoryRow);
 	}
 
 	protected void BuildSections()
@@ -2265,7 +2265,7 @@ class EditorBuildMenuView: ScriptView
 		m_SavedSelectedSourceIds = CopyStringArray(m_FilterState.SelectedSourceIds);
 	}
 
-	protected void LayoutFilterButtons(array<ref EditorBuildMenuFilterButton> buttons, Widget container)
+	protected void LayoutNavButtons(array<ref EditorBuildMenuNavButton> buttons, Widget container)
 	{
 		if (!container) {
 			return;
@@ -2275,7 +2275,7 @@ class EditorBuildMenuView: ScriptView
 		float row_height = 0;
 		float y_offset = FILTER_ROW_VERTICAL_PADDING * 0.5;
 		for (int i = 0; i < buttons.Count(); i++) {
-			EditorBuildMenuFilterButton button = buttons[i];
+			EditorBuildMenuNavButton button = buttons[i];
 			if (!button) {
 				continue;
 			}
@@ -2398,7 +2398,7 @@ class EditorBuildMenuView: ScriptView
 
 	protected void CreateTabButton(string id, string label)
 	{
-		EditorBuildMenuFilterButton button = new EditorBuildMenuFilterButton(this, label, EditorBuildMenuFilterButtonType.EDITOR_BUILD_MENU_FILTER_TAB, id);
+		EditorBuildMenuNavButton button = new EditorBuildMenuNavButton(this, label, EditorBuildMenuNavButtonType.EDITOR_BUILD_MENU_NAV_TAB, id);
 		button.SetSelected(id == m_FilterState.TabId);
 		m_TabButtons.Insert(button);
 		BuildMenuTabRow.AddChild(button.GetLayoutRoot());
@@ -2406,7 +2406,7 @@ class EditorBuildMenuView: ScriptView
 
 	protected void CreateSubcategoryButton(string id, string label)
 	{
-		EditorBuildMenuFilterButton button = new EditorBuildMenuFilterButton(this, label, EditorBuildMenuFilterButtonType.EDITOR_BUILD_MENU_FILTER_SUBCATEGORY, id);
+		EditorBuildMenuNavButton button = new EditorBuildMenuNavButton(this, label, EditorBuildMenuNavButtonType.EDITOR_BUILD_MENU_NAV_SUBCATEGORY, id);
 		button.SetSelected(id == m_FilterState.SubcategoryId);
 		m_SubcategoryButtons.Insert(button);
 		BuildMenuSubcategoryRow.AddChild(button.GetLayoutRoot());
