@@ -780,15 +780,26 @@ class EditorBuildMenuSectionView: ScriptView
 	static const float CARD_GAP = 12;
 	static const int MAX_COLUMNS = 9;
 
+	protected EditorBuildMenuView m_Owner;
+	protected string m_SectionKey;
 	protected ref array<ref EditorBuildMenuCard> m_Cards = {};
 	protected float m_Height;
+	protected bool m_IsCollapsed;
+	protected bool m_IsCollapseHovered;
 
 	Widget BuildMenuSectionHeader;
 	TextWidget BuildMenuSectionTitle;
 	Widget BuildMenuSectionGrid;
+	Widget BuildMenuSectionCollapseRoot;
+	ButtonWidget BuildMenuSectionCollapseButton;
+	ImageWidget BuildMenuSectionCollapseIcon;
 
-	void EditorBuildMenuSectionView(EditorBuildMenuView owner, EditorBuildMenuSectionData section_data, EditorPlaceableItem selected_placeable, float available_width)
+	void EditorBuildMenuSectionView(EditorBuildMenuView owner, EditorBuildMenuSectionData section_data, EditorPlaceableItem selected_placeable, float available_width, string section_key, bool collapsed)
 	{
+		m_Owner = owner;
+		m_SectionKey = section_key;
+		m_IsCollapsed = collapsed;
+
 		BuildMenuSectionTitle.SetText(section_data.Label);
 
 		foreach (EditorBuildMenuEntry entry: section_data.Entries) {
@@ -797,6 +808,12 @@ class EditorBuildMenuSectionView: ScriptView
 			BuildMenuSectionGrid.AddChild(card.GetLayoutRoot());
 		}
 
+		if (BuildMenuSectionCollapseIcon) {
+			BuildMenuSectionCollapseIcon.LoadImageFile(0, "set:dayz_gui image:icon_expand");
+			BuildMenuSectionCollapseIcon.LoadImageFile(1, "set:dayz_gui image:icon_collapse");
+		}
+
+		UpdateCollapseButton();
 		LayoutCards(available_width);
 	}
 
@@ -810,6 +827,10 @@ class EditorBuildMenuSectionView: ScriptView
 
 	void AppendCards(out array<ref EditorBuildMenuCard> cards)
 	{
+		if (m_IsCollapsed) {
+			return;
+		}
+
 		foreach (EditorBuildMenuCard card: m_Cards) {
 			cards.Insert(card);
 		}
@@ -825,22 +846,54 @@ class EditorBuildMenuSectionView: ScriptView
 		return m_Height;
 	}
 
+	override bool OnClick(Widget w, int x, int y, int button)
+	{
+		if (button == MouseState.LEFT && IsPartOfCollapseButton(w)) {
+			m_Owner.ToggleSectionCollapsed(m_SectionKey);
+			return true;
+		}
+
+		return super.OnClick(w, x, y, button);
+	}
+
+	override bool OnMouseEnter(Widget w, int x, int y)
+	{
+		if (IsPartOfCollapseButton(w)) {
+			m_IsCollapseHovered = true;
+			UpdateCollapseButton();
+		}
+
+		return super.OnMouseEnter(w, x, y);
+	}
+
+	override bool OnMouseLeave(Widget w, Widget enterW, int x, int y)
+	{
+		if (IsPartOfCollapseButton(w) && !IsPartOfCollapseButton(enterW)) {
+			m_IsCollapseHovered = false;
+			UpdateCollapseButton();
+		}
+
+		return super.OnMouseLeave(w, enterW, x, y);
+	}
+
 	protected void LayoutCards(float available_width)
 	{
+		LayoutHeader(available_width);
+
 		EditorBuildMenuCard sample_card = null;
 		if (m_Cards.Count() > 0) {
 			sample_card = m_Cards[0];
 		}
 
-		if (!sample_card) {
+		if (m_IsCollapsed || !sample_card) {
 			m_Height = TITLE_HEIGHT;
-			if (BuildMenuSectionHeader) {
-				BuildMenuSectionHeader.SetSize(available_width, TITLE_HEIGHT);
-			}
+			BuildMenuSectionGrid.Show(false);
 			BuildMenuSectionGrid.SetSize(available_width, 0);
 			GetLayoutRoot().SetSize(available_width, m_Height);
 			return;
 		}
+
+		BuildMenuSectionGrid.Show(true);
 
 		float base_card_width = sample_card.GetBaseWidth();
 		float base_card_height = sample_card.GetBaseHeight();
@@ -896,12 +949,6 @@ class EditorBuildMenuSectionView: ScriptView
 		if (rows > 0) {
 			grid_height = rows * card_height + (rows - 1) * CARD_GAP;
 		}
-
-		if (BuildMenuSectionHeader) {
-			BuildMenuSectionHeader.SetSize(available_width, TITLE_HEIGHT);
-		}
-
-		BuildMenuSectionTitle.SetSize(available_width - 20, TITLE_HEIGHT);
 		BuildMenuSectionGrid.SetSize(available_width, grid_height);
 		m_Height = GRID_TOP + grid_height;
 		if (grid_height <= 0) {
@@ -918,6 +965,65 @@ class EditorBuildMenuSectionView: ScriptView
 
 	protected override bool UseUpdateLoop()
 	{
+		return false;
+	}
+
+	protected void LayoutHeader(float available_width)
+	{
+		if (BuildMenuSectionHeader) {
+			BuildMenuSectionHeader.SetSize(available_width, TITLE_HEIGHT);
+		}
+
+		if (BuildMenuSectionCollapseRoot) {
+			BuildMenuSectionCollapseRoot.SetPos(available_width - TITLE_HEIGHT, 0);
+			BuildMenuSectionCollapseRoot.SetSize(TITLE_HEIGHT, TITLE_HEIGHT);
+		}
+
+		if (BuildMenuSectionCollapseButton) {
+			BuildMenuSectionCollapseButton.SetSize(TITLE_HEIGHT, TITLE_HEIGHT);
+		}
+
+		if (BuildMenuSectionCollapseIcon) {
+			BuildMenuSectionCollapseIcon.SetSize(TITLE_HEIGHT, TITLE_HEIGHT);
+		}
+
+		if (BuildMenuSectionTitle) {
+			BuildMenuSectionTitle.SetSize(available_width - 36, TITLE_HEIGHT);
+		}
+	}
+
+	protected void UpdateCollapseButton()
+	{
+		if (BuildMenuSectionCollapseRoot) {
+			if (m_IsCollapseHovered) {
+				BuildMenuSectionCollapseRoot.SetColor(GetEditor().GetSettings().HighlightColor);
+			} else {
+				BuildMenuSectionCollapseRoot.SetColor(ARGB(240, 32, 36, 45));
+			}
+		}
+
+		if (BuildMenuSectionCollapseIcon) {
+			if (m_IsCollapsed) {
+				BuildMenuSectionCollapseIcon.SetImage(0);
+			} else {
+				BuildMenuSectionCollapseIcon.SetImage(1);
+			}
+
+			BuildMenuSectionCollapseIcon.SetColor(ARGB(235, 201, 208, 216));
+		}
+	}
+
+	protected bool IsPartOfCollapseButton(Widget widget)
+	{
+		Widget current = widget;
+		while (current) {
+			if (current == BuildMenuSectionCollapseButton || current == BuildMenuSectionCollapseRoot) {
+				return true;
+			}
+
+			current = current.GetParent();
+		}
+
 		return false;
 	}
 }
@@ -947,6 +1053,7 @@ class EditorBuildMenuView: ScriptView
 	protected ref array<ref EditorBuildMenuSectionView> m_SectionViews = {};
 	protected ref array<ref EditorBuildMenuSourceFilterRow> m_SourceFilterRows = {};
 	protected ref array<string> m_PendingSelectedSourceIds = {};
+	protected ref map<string, bool> m_CollapsedSections = new map<string, bool>();
 
 	protected bool m_IsOpen;
 	protected bool m_RestoreCursorVisible;
@@ -2064,7 +2171,8 @@ class EditorBuildMenuView: ScriptView
 		float current_y = 0;
 
 		foreach (EditorBuildMenuSectionData section: sections) {
-			EditorBuildMenuSectionView section_view = new EditorBuildMenuSectionView(this, section, selected_placeable, content_width);
+			string section_key = GetSectionStateKey(section);
+			EditorBuildMenuSectionView section_view = new EditorBuildMenuSectionView(this, section, selected_placeable, content_width, section_key, IsSectionCollapsed(section_key));
 			section_view.SetPosition(0, current_y);
 			m_SectionViews.Insert(section_view);
 			BuildMenuSectionList.AddChild(section_view.GetLayoutRoot());
@@ -2155,6 +2263,21 @@ class EditorBuildMenuView: ScriptView
 		m_LastScrollPosition = BuildMenuScroll.GetVScrollPos();
 	}
 
+	void ToggleSectionCollapsed(string section_key)
+	{
+		if (section_key == string.Empty) {
+			return;
+		}
+
+		if (m_CollapsedSections.Contains(section_key)) {
+			m_CollapsedSections.Remove(section_key);
+		} else {
+			m_CollapsedSections.Set(section_key, true);
+		}
+
+		QueueRender(false, false, false);
+	}
+
 	protected void SyncToCurrentPlaceable()
 	{
 		EditorPlaceableItem current_placeable = GetCurrentPlaceable();
@@ -2183,6 +2306,20 @@ class EditorBuildMenuView: ScriptView
 		}
 
 		return m_Editor.GetObjectManager().CurrentSelectedItem;
+	}
+
+	protected string GetSectionStateKey(EditorBuildMenuSectionData section)
+	{
+		if (!section) {
+			return string.Empty;
+		}
+
+		return m_FilterState.TabId + "|" + m_FilterState.SubcategoryId + "|" + section.Id;
+	}
+
+	protected bool IsSectionCollapsed(string section_key)
+	{
+		return m_CollapsedSections.Contains(section_key);
 	}
 
 	protected EditorBuildMenuFilterState CopyState()

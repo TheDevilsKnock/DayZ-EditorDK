@@ -236,7 +236,7 @@ PanelWidgetClass BuildMenuOverlay {
            filter 1
            {
             ScriptParamsClass {
-             Symbol_Name "gamepad"
+             Symbol_Name "gamepad_modern"
              Symbol_Size 2
             }
            }

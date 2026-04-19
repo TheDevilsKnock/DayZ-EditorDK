@@ -11,7 +11,7 @@ PanelWidgetClass BuildMenuSectionRoot {
   PanelWidgetClass BuildMenuSectionHeader {
    visible 1
    clipchildren 1
-   ignorepointer 1
+   ignorepointer 0
    color 0.125 0.141 0.176 0.94
    position 0 0
    size 420 22
@@ -34,6 +34,47 @@ PanelWidgetClass BuildMenuSectionRoot {
      "exact text size" 14
      text_proportion 0.75
      "text valign" center
+    }
+    PanelWidgetClass BuildMenuSectionCollapseRoot {
+     visible 1
+     clipchildren 1
+     ignorepointer 0
+     color 0.125 0.141 0.176 0.94
+     position 398 0
+     size 22 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style rover_sim_colorable
+     {
+      ButtonWidgetClass BuildMenuSectionCollapseButton {
+       visible 1
+       ignorepointer 0
+       position 0 0
+       size 22 22
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Default
+       text ""
+      }
+      ImageWidgetClass BuildMenuSectionCollapseIcon {
+       ignorepointer 1
+       position 0 0
+       size 22 22
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       scaled 1
+       draggable 0
+       mode additive
+       "src alpha" 1
+       pivot 1 1
+      }
+     }
     }
    }
   }
