@@ -74,6 +74,12 @@ class EditorBuildMenuNavButton: ScriptView
 		BuildMenuNavButton.SetSize(button_width, HEIGHT);
 	}
 
+	void SetWidth(float width)
+	{
+		BuildMenuNavButtonRoot.SetSize(width, HEIGHT);
+		BuildMenuNavButton.SetSize(width, HEIGHT);
+	}
+
 	float GetWidth()
 	{
 		float width, height;
@@ -2419,6 +2425,30 @@ class EditorBuildMenuView: ScriptView
 			return;
 		}
 
+		int button_count = 0;
+		for (int count_index = 0; count_index < buttons.Count(); count_index++) {
+			if (buttons[count_index]) {
+				button_count++;
+			}
+		}
+
+		if (button_count == 0) {
+			return;
+		}
+
+		float container_width;
+		float container_height;
+		container.GetScreenSize(container_width, container_height);
+		if (container_width <= 0) {
+			container.GetSize(container_width, container_height);
+		}
+
+		float total_spacing = FILTER_BUTTON_SPACING * (button_count - 1);
+		float button_width = (container_width - total_spacing) / button_count;
+		if (button_width < 1) {
+			button_width = 1;
+		}
+
 		float x = 0;
 		float row_height = 0;
 		float y_offset = FILTER_ROW_VERTICAL_PADDING * 0.5;
@@ -2428,7 +2458,7 @@ class EditorBuildMenuView: ScriptView
 				continue;
 			}
 
-			button.ResizeToContent();
+			button.SetWidth(button_width);
 			button.GetLayoutRoot().SetPos(x, y_offset);
 			x += button.GetWidth() + FILTER_BUTTON_SPACING;
 

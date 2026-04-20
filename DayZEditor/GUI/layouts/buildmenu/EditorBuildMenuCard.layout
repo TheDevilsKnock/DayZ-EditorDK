@@ -3,13 +3,13 @@ PanelWidgetClass BuildMenuCardRoot {
  clipchildren 1
  inheritalpha 0
  ignorepointer 0
+ color 0.11 0.118 0.133 1
  size 192 196
  hexactpos 1
  vexactpos 1
  hexactsize 1
  vexactsize 1
- color 0.1098 0.1176 0.1333 1
- style rover_sim_colorable
+ style editor_selection
  {
   ButtonWidgetClass BuildMenuCardButton {
    visible 1
@@ -51,18 +51,19 @@ PanelWidgetClass BuildMenuCardRoot {
     }
     PanelWidgetClass BuildMenuCardFooter {
      ignorepointer 1
+     color 0.11 0.118 0.133 1
      position 8 144
      size 176 34
      hexactpos 1
      vexactpos 1
      hexactsize 1
      vexactsize 1
-     color 0.1098 0.1176 0.1333 1
-     style rover_sim_colorable
+     style DayZDefaultPanel
      {
       TextWidgetClass BuildMenuCardTitle {
        clipchildren 1
        ignorepointer 1
+       color 1 1 1 1
        position 8 4
        size 160 13
        hexactpos 1
@@ -71,7 +72,6 @@ PanelWidgetClass BuildMenuCardRoot {
        vexactsize 1
        text "Item"
        font "gui/fonts/sdf_MetronBook24"
-       color 1 1 1 1
        "exact text" 1
        "exact text size" 10
        "text halign" left
@@ -80,6 +80,7 @@ PanelWidgetClass BuildMenuCardRoot {
       TextWidgetClass BuildMenuCardSource {
        clipchildren 1
        ignorepointer 1
+       color 1 1 1 0.78
        position 8 18
        size 160 12
        hexactpos 1
@@ -88,7 +89,6 @@ PanelWidgetClass BuildMenuCardRoot {
        vexactsize 1
        text "Source"
        font "gui/fonts/sdf_MetronLight24"
-       color 1 1 1 0.78
        "exact text" 1
        "exact text size" 9
        "text halign" left

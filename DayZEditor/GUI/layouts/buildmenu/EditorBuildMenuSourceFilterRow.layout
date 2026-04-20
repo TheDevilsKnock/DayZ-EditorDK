@@ -30,7 +30,7 @@ PanelWidgetClass BuildMenuSourceFilterRowRoot {
    hexactsize 1
    vexactsize 1
    text "Source"
-   font "gui/fonts/sdf_MetronBook24"
+   font "gui/fonts/Metron"
    "exact text size" 13
    text_proportion 0.75
    "text valign" center

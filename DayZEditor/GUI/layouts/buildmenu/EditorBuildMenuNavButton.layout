@@ -8,7 +8,7 @@ PanelWidgetClass BuildMenuNavButtonRoot {
  vexactpos 1
  hexactsize 1
  vexactsize 1
- style rover_sim_colorable
+ style editor_selection
  {
   TextWidgetClass BuildMenuNavButtonLabel {
    ignorepointer 1
@@ -20,7 +20,7 @@ PanelWidgetClass BuildMenuNavButtonRoot {
    hexactsize 0
    vexactsize 0
    text "Filter"
-   font "gui/fonts/sdf_MetronBook24"
+   font "gui/fonts/system"
    "exact text size" 14
    text_proportion 0.75
    "size to text h" 1
@@ -32,12 +32,15 @@ PanelWidgetClass BuildMenuNavButtonRoot {
    visible 1
    clipchildren 0
    ignorepointer 0
+   color 0.706 0.706 0.706 1
    size 1 1
    hexactpos 0
    vexactpos 0
    hexactsize 0
    vexactsize 0
-   style Empty
+   scaled 1
+   style Default
+   "no focus" 1
   }
  }
 }
