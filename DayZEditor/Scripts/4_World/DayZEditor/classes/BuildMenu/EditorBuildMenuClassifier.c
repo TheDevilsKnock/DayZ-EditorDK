@@ -8,8 +8,9 @@ class EditorBuildMenuPathRule: Managed
 	string SourceId;
 	string SourceLabel;
 	int Order = -1;
+	bool FromSourceConfig;
 
-	void EditorBuildMenuPathRule(string path, string tab_id, string subcategory_id, string section_id = string.Empty, int source_kind = DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, string source_id = string.Empty, string source_label = string.Empty, int order = -1)
+	void EditorBuildMenuPathRule(string path, string tab_id, string subcategory_id, string section_id = string.Empty, int source_kind = DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_MODDED, string source_id = string.Empty, string source_label = string.Empty, int order = -1, bool from_source_config = false)
 	{
 		Path = path;
 		TabId = tab_id;
@@ -19,21 +20,47 @@ class EditorBuildMenuPathRule: Managed
 		SourceId = source_id;
 		SourceLabel = source_label;
 		Order = order;
+		FromSourceConfig = from_source_config;
+	}
+
+	bool IsFromSourceConfig()
+	{
+		return FromSourceConfig;
 	}
 }
 
-class XMLEditorBuildMenuClassification: XMLCallback
+class EditorBuildMenuSourceConfig: Managed
+{
+	string SourceId;
+	string FilePath;
+	ref array<ref DayZEditorBuildMenuSectionRegistration> Sections = {};
+	ref array<ref EditorBuildMenuPathRule> PathRules = {};
+
+	void EditorBuildMenuSourceConfig(string source_id, string file_path)
+	{
+		SourceId = source_id;
+		FilePath = file_path;
+	}
+}
+
+class EditorBuildMenuXmlClassification: XMLCallback
 {
 	protected ref array<ref DayZEditorBuildMenuSectionRegistration> m_Sections;
 	protected ref array<ref EditorBuildMenuPathRule> m_Paths;
 	protected bool m_Success;
 	protected bool m_HasSchemaError;
 	protected bool m_HasVanillaPaths;
+	protected bool m_RequiresVanillaPaths;
+	protected string m_SourceId;
+	protected bool m_FromSourceConfig;
 
-	void XMLEditorBuildMenuClassification(array<ref DayZEditorBuildMenuSectionRegistration> sections, array<ref EditorBuildMenuPathRule> paths)
+	void EditorBuildMenuXmlClassification(array<ref DayZEditorBuildMenuSectionRegistration> sections, array<ref EditorBuildMenuPathRule> paths, bool requires_vanilla_paths = true, string source_id = string.Empty, bool from_source_config = false)
 	{
 		m_Sections = sections;
 		m_Paths = paths;
+		m_RequiresVanillaPaths = requires_vanilla_paths;
+		m_SourceId = source_id;
+		m_FromSourceConfig = from_source_config;
 	}
 
 	override void OnSuccess(XMLDocument document)
@@ -44,7 +71,7 @@ class XMLEditorBuildMenuClassification: XMLCallback
 
 		XMLTag root = document.Get(1);
 		if (!root) {
-			EditorLog.Error("XMLEditorBuildMenuClassification::OnSuccess root tag missing");
+			EditorLog.Error("EditorBuildMenuXmlClassification::OnSuccess root tag missing");
 			return;
 		}
 
@@ -57,6 +84,11 @@ class XMLEditorBuildMenuClassification: XMLCallback
 
 			switch (child_tag.GetName()) {
 				case "VanillaPaths":
+					if (m_SourceId != string.Empty) {
+						EditorLog.Warning("EditorBuildMenuXmlClassification::OnSuccess ignoring VanillaPaths block for source-owned file %1", m_SourceId);
+						break;
+					}
+
 					m_HasVanillaPaths = true;
 					ParseScopedPaths(child_tag.GetContent(), DayZEditorBuildMenuSourceKind.DAYZ_EDITOR_BUILD_MENU_SOURCE_VANILLA, "vanilla", "Vanilla");
 					break;
@@ -71,13 +103,13 @@ class XMLEditorBuildMenuClassification: XMLCallback
 					break;
 
 				default:
-					EditorLog.Warning("XMLEditorBuildMenuClassification::OnSuccess ignoring unsupported root tag %1", child_tag.GetName());
+					EditorLog.Warning("EditorBuildMenuXmlClassification::OnSuccess ignoring unsupported root tag %1", child_tag.GetName());
 					break;
 			}
 		}
 
-		if (!m_HasVanillaPaths) {
-			EditorLog.Error("XMLEditorBuildMenuClassification::OnSuccess missing required VanillaPaths block");
+		if (m_RequiresVanillaPaths && !m_HasVanillaPaths) {
+			EditorLog.Error("EditorBuildMenuXmlClassification::OnSuccess missing required VanillaPaths block");
 			return;
 		}
 
@@ -90,7 +122,7 @@ class XMLEditorBuildMenuClassification: XMLCallback
 
 	override void OnFailure(XMLDocument document)
 	{
-		EditorLog.Error("XMLEditorBuildMenuClassification::OnFailure");
+		EditorLog.Error("EditorBuildMenuXmlClassification::OnFailure");
 	}
 
 	bool IsSuccessful()
@@ -108,7 +140,13 @@ class XMLEditorBuildMenuClassification: XMLCallback
 
 			string mod_id = EditorBuildMenuInference.NormalizeId(GetStringAttribute(mod_tag, "id"));
 			if (mod_id == string.Empty) {
-				EditorLog.Error("XMLEditorBuildMenuClassification::ParseMods missing required mod id");
+				EditorLog.Error("EditorBuildMenuXmlClassification::ParseMods missing required mod id");
+				m_HasSchemaError = true;
+				continue;
+			}
+
+			if (m_SourceId != string.Empty && mod_id != m_SourceId) {
+				EditorLog.Error("EditorBuildMenuXmlClassification::ParseMods owner mismatch %1 in file for %2", mod_id, m_SourceId);
 				m_HasSchemaError = true;
 				continue;
 			}
@@ -141,12 +179,12 @@ class XMLEditorBuildMenuClassification: XMLCallback
 
 			string tab_id = EditorBuildMenuInference.NormalizeId(GetStringAttribute(tab_tag, "id"));
 			if (tab_id == string.Empty) {
-				EditorLog.Error("XMLEditorBuildMenuClassification::ParseScopedPaths missing tab id");
+				EditorLog.Error("EditorBuildMenuXmlClassification::ParseScopedPaths missing tab id");
 				continue;
 			}
 
 			if (!EditorBuildMenuTaxonomy.IsBuiltinTabId(tab_id)) {
-				EditorLog.Error("XMLEditorBuildMenuClassification::ParseScopedPaths invalid tab %1", tab_id);
+				EditorLog.Error("EditorBuildMenuXmlClassification::ParseScopedPaths invalid tab %1", tab_id);
 				m_HasSchemaError = true;
 				continue;
 			}
@@ -164,19 +202,19 @@ class XMLEditorBuildMenuClassification: XMLCallback
 			}
 
 			if (subcategory_tag.GetName() != "Subcategory") {
-				EditorLog.Error("XMLEditorBuildMenuClassification::ParseTabPaths invalid child %1 under tab %2; v3 requires Subcategory nodes", subcategory_tag.GetName(), tab_id);
+				EditorLog.Error("EditorBuildMenuXmlClassification::ParseTabPaths invalid child %1 under tab %2; v3 requires Subcategory nodes", subcategory_tag.GetName(), tab_id);
 				m_HasSchemaError = true;
 				continue;
 			}
 
 			string subcategory_id = EditorBuildMenuInference.NormalizeId(GetStringAttribute(subcategory_tag, "id"));
 			if (subcategory_id == string.Empty) {
-				EditorLog.Error("XMLEditorBuildMenuClassification::ParseTabPaths missing subcategory id under tab %1", tab_id);
+				EditorLog.Error("EditorBuildMenuXmlClassification::ParseTabPaths missing subcategory id under tab %1", tab_id);
 				continue;
 			}
 
 			if (!EditorBuildMenuTaxonomy.IsBuiltinSubcategoryId(tab_id, subcategory_id)) {
-				EditorLog.Error("XMLEditorBuildMenuClassification::ParseTabPaths invalid target %1/%2", tab_id, subcategory_id);
+				EditorLog.Error("EditorBuildMenuXmlClassification::ParseTabPaths invalid target %1/%2", tab_id, subcategory_id);
 				m_HasSchemaError = true;
 				continue;
 			}
@@ -203,7 +241,7 @@ class XMLEditorBuildMenuClassification: XMLCallback
 					break;
 
 				default:
-					EditorLog.Error("XMLEditorBuildMenuClassification::ParseSubcategoryPaths invalid child %1 under %2/%3", child_tag.GetName(), tab_id, subcategory_id);
+					EditorLog.Error("EditorBuildMenuXmlClassification::ParseSubcategoryPaths invalid child %1 under %2/%3", child_tag.GetName(), tab_id, subcategory_id);
 					m_HasSchemaError = true;
 					break;
 			}
@@ -219,7 +257,7 @@ class XMLEditorBuildMenuClassification: XMLCallback
 			}
 
 			if (section_tag.GetName() != "Section") {
-				EditorLog.Error("XMLEditorBuildMenuClassification::ParseLocalSections invalid child %1 under %2/%3", section_tag.GetName(), tab_id, subcategory_id);
+				EditorLog.Error("EditorBuildMenuXmlClassification::ParseLocalSections invalid child %1 under %2/%3", section_tag.GetName(), tab_id, subcategory_id);
 				m_HasSchemaError = true;
 				continue;
 			}
@@ -228,7 +266,7 @@ class XMLEditorBuildMenuClassification: XMLCallback
 			string section_label = GetStringAttribute(section_tag, "label");
 			int section_order = GetIntAttribute(section_tag, "order", -1);
 			if (section_id == string.Empty) {
-				EditorLog.Error("XMLEditorBuildMenuClassification::ParseLocalSections missing section id for %1/%2", tab_id, subcategory_id);
+				EditorLog.Error("EditorBuildMenuXmlClassification::ParseLocalSections missing section id for %1/%2", tab_id, subcategory_id);
 				continue;
 			}
 
@@ -243,22 +281,22 @@ class XMLEditorBuildMenuClassification: XMLCallback
 		int order = GetIntAttribute(path_tag, "order", -1);
 
 		if (folder_path == string.Empty) {
-			EditorLog.Error("XMLEditorBuildMenuClassification::ParseLocalPath missing folder for %1/%2", tab_id, subcategory_id);
+			EditorLog.Error("EditorBuildMenuXmlClassification::ParseLocalPath missing folder for %1/%2", tab_id, subcategory_id);
 			return;
 		}
 
 		if (GetStringAttribute(path_tag, "tab") != string.Empty || GetStringAttribute(path_tag, "subcategory") != string.Empty || GetStringAttribute(path_tag, "source") != string.Empty) {
-			EditorLog.Error("XMLEditorBuildMenuClassification::ParseLocalPath deprecated flat attributes found on %1; v3 uses inherited Tab/Subcategory context", folder_path);
+			EditorLog.Error("EditorBuildMenuXmlClassification::ParseLocalPath deprecated flat attributes found on %1; v3 uses inherited Tab/Subcategory context", folder_path);
 			m_HasSchemaError = true;
 			return;
 		}
 
-		m_Paths.Insert(new EditorBuildMenuPathRule(folder_path, tab_id, subcategory_id, section_id, source_kind, source_id, source_label, order));
+		m_Paths.Insert(new EditorBuildMenuPathRule(folder_path, tab_id, subcategory_id, section_id, source_kind, source_id, source_label, order, m_FromSourceConfig));
 	}
 
 	protected void MarkDeprecatedFlatSchema(string tag_name)
 	{
-		EditorLog.Error("XMLEditorBuildMenuClassification::MarkDeprecatedFlatSchema deprecated v2 tag %1 found; v3 requires Tab/Subcategory/Path nesting", tag_name);
+		EditorLog.Error("EditorBuildMenuXmlClassification::MarkDeprecatedFlatSchema deprecated v2 tag %1 found; v3 requires Tab/Subcategory/Path nesting", tag_name);
 		m_HasSchemaError = true;
 	}
 
@@ -286,6 +324,7 @@ class XMLEditorBuildMenuClassification: XMLCallback
 class EditorBuildMenuInference
 {
 	protected static const string CLASSIFICATION_XML_FILE = "DayZEditor/Scripts/Data/Defaults/BuildMenuClassification.xml";
+	protected static const string SOURCE_CONFIG_FILE_PREFIX = "BuildMenu_";
 	protected static const ref array<string> NOISE_SEGMENTS = {
 		"assets",
 		"data",
@@ -295,23 +334,69 @@ class EditorBuildMenuInference
 		"animconfig"
 	};
 
-	protected static ref array<ref DayZEditorBuildMenuSectionRegistration> s_SectionDefinitions;
+	protected static ref array<ref DayZEditorBuildMenuSectionRegistration> s_DefaultSectionDefinitions;
 	protected static ref array<ref DayZEditorBuildMenuSectionRegistration> s_RegisteredSections;
 	protected static ref array<ref DayZEditorBuildMenuEntryRegistration> s_RegisteredEntries;
+	protected static ref array<ref EditorBuildMenuPathRule> s_DefaultPathRules;
+	protected static ref array<ref EditorBuildMenuSourceConfig> s_SourceConfigs;
 	protected static ref array<ref EditorBuildMenuPathRule> s_PathRules;
 	protected static bool s_DefinitionsLoaded;
+
+	static void LoadDefinitions(array<ref EditorPlaceableItem> placeable_items)
+	{
+		if (s_DefinitionsLoaded) {
+			return;
+		}
+
+		ResetDefinitions();
+		s_RegisteredSections = GetRegisteredSections();
+		s_RegisteredEntries = GetRegisteredEntries();
+		LoadDefaultDefinitions();
+		RebuildPathRules();
+
+		if (placeable_items && placeable_items.Count() > 0) {
+			LoadSourceConfigs(GetActiveSourceIds(placeable_items));
+			RebuildPathRules();
+		}
+
+		s_DefinitionsLoaded = true;
+	}
+
+	static string GetSourceConfigFilePath(string source_id)
+	{
+		source_id = NormalizeId(source_id);
+		if (!IsSpecificSourceId(source_id)) {
+			return string.Empty;
+		}
+
+		return SystemPath.Format(SystemPath.Combine(Editor.EDITOR_CONFIGS_DIRECTORY, string.Format("%1%2.xml", SOURCE_CONFIG_FILE_PREFIX, source_id)));
+	}
 
 	static EditorBuildMenuTaxonomy CreateTaxonomy()
 	{
 		EnsureDefinitionsLoaded();
 
 		EditorBuildMenuTaxonomy taxonomy = new EditorBuildMenuTaxonomy();
-		foreach (DayZEditorBuildMenuSectionRegistration section_definition: s_SectionDefinitions) {
+		foreach (DayZEditorBuildMenuSectionRegistration section_definition: s_DefaultSectionDefinitions) {
 			taxonomy.AddSection(section_definition.TabId, section_definition.SubcategoryId, section_definition.Id, section_definition.Label, section_definition.Order);
 		}
 
 		foreach (DayZEditorBuildMenuSectionRegistration section_registration: s_RegisteredSections) {
 			taxonomy.AddSection(section_registration.TabId, section_registration.SubcategoryId, section_registration.Id, section_registration.Label, section_registration.Order);
+		}
+
+		foreach (EditorBuildMenuSourceConfig source_config: s_SourceConfigs) {
+			if (!source_config) {
+				continue;
+			}
+
+			foreach (DayZEditorBuildMenuSectionRegistration source_section_definition: source_config.Sections) {
+				if (!source_section_definition) {
+					continue;
+				}
+
+				taxonomy.AddSection(source_section_definition.TabId, source_section_definition.SubcategoryId, source_section_definition.Id, source_section_definition.Label, source_section_definition.Order);
+			}
 		}
 
 		taxonomy.FinalizeDefinitions();
@@ -352,7 +437,7 @@ class EditorBuildMenuInference
 
 		return placeable.Type;
 	}
-
+// TODO : check what can be previewed based on classification result instead of hardcoding exclusions here
 	static bool CanPreview(EditorPlaceableItem placeable, EditorBuildMenuMatchResult match_result)
 	{
 		if (!placeable) {
@@ -391,19 +476,29 @@ class EditorBuildMenuInference
 	static EditorBuildMenuMatchResult Classify(EditorPlaceableItem placeable)
 	{
 		EnsureDefinitionsLoaded();
+		return ClassifyInternal(placeable);
+	}
 
+	protected static EditorBuildMenuMatchResult ClassifyInternal(EditorPlaceableItem placeable)
+	{
 		string normalized_path = NormalizePreviewPath(placeable);
-		EditorBuildMenuMatchResult registered_result = MatchRegisteredEntry(placeable, normalized_path);
-		if (registered_result) {
-			return registered_result;
-		}
-
+		string source_path = GetSourcePath(placeable, normalized_path);
 		EditorBuildMenuMatchResult scripted_result = MatchScripted(placeable);
 		if (scripted_result) {
 			return scripted_result;
 		}
 
-		EditorBuildMenuPathRule matched_rule = FindPathRule(normalized_path);
+		EditorBuildMenuPathRule matched_rule = FindSourceConfigPathRule(source_path);
+		if (matched_rule) {
+			return CreateResult(matched_rule.TabId, matched_rule.SubcategoryId, GetSectionId(source_path, matched_rule), GetSourceKind(placeable, normalized_path, matched_rule.SourceId, matched_rule.SourceKind, matched_rule.SourceLabel), GetSourceId(placeable, normalized_path, matched_rule.SourceId, matched_rule.SourceKind, matched_rule.SourceLabel), GetSourceLabel(placeable, normalized_path, matched_rule.SourceId, matched_rule.SourceKind, matched_rule.SourceLabel));
+		}
+
+		EditorBuildMenuMatchResult registered_result = MatchRegisteredEntry(placeable, normalized_path);
+		if (registered_result) {
+			return registered_result;
+		}
+
+		matched_rule = FindDefaultPathRule(normalized_path);
 		if (matched_rule) {
 			return CreateResult(matched_rule.TabId, matched_rule.SubcategoryId, GetSectionId(normalized_path, matched_rule), GetSourceKind(placeable, normalized_path, matched_rule.SourceId, matched_rule.SourceKind, matched_rule.SourceLabel), GetSourceId(placeable, normalized_path, matched_rule.SourceId, matched_rule.SourceKind, matched_rule.SourceLabel), GetSourceLabel(placeable, normalized_path, matched_rule.SourceId, matched_rule.SourceKind, matched_rule.SourceLabel));
 		}
@@ -544,23 +639,97 @@ class EditorBuildMenuInference
 			return;
 		}
 
-		s_DefinitionsLoaded = true;
-		s_SectionDefinitions = {};
-		s_RegisteredSections = GetRegisteredSections();
-		s_RegisteredEntries = GetRegisteredEntries();
-		s_PathRules = {};
+		LoadDefinitions(null);
+	}
 
+	protected static void ResetDefinitions()
+	{
+		s_DefaultSectionDefinitions = {};
+		s_RegisteredSections = {};
+		s_RegisteredEntries = {};
+		s_DefaultPathRules = {};
+		s_SourceConfigs = {};
+		s_PathRules = {};
+		s_DefinitionsLoaded = false;
+	}
+
+	protected static void LoadDefaultDefinitions()
+	{
 		string file_name = SystemPath.Format(CLASSIFICATION_XML_FILE);
 		if (!File.Exists(file_name)) {
-			EditorLog.Error("EditorBuildMenuInference::EnsureDefinitionsLoaded file missing %1", file_name);
+			EditorLog.Error("EditorBuildMenuInference::LoadDefaultDefinitions file missing %1", file_name);
 			return;
 		}
 
-		XMLEditorBuildMenuClassification xml_definition = new XMLEditorBuildMenuClassification(s_SectionDefinitions, s_PathRules);
+		EditorBuildMenuXmlClassification xml_definition = new EditorBuildMenuXmlClassification(s_DefaultSectionDefinitions, s_DefaultPathRules, true, string.Empty, false);
 		GetXMLApi().Read(file_name, xml_definition);
 		if (!xml_definition.IsSuccessful()) {
-			EditorLog.Error("EditorBuildMenuInference::EnsureDefinitionsLoaded failed to parse %1", file_name);
+			EditorLog.Error("EditorBuildMenuInference::LoadDefaultDefinitions failed to parse %1", file_name);
+		}
+	}
+
+	protected static void LoadSourceConfigs(array<string> active_source_ids)
+	{
+		if (!active_source_ids || active_source_ids.Count() == 0) {
 			return;
+		}
+
+		ref array<string> source_config_files = GetSourceConfigFiles();
+		foreach (string source_config_file: source_config_files) {
+			string source_id = GetSourceIdFromConfigFile(source_config_file);
+			if (!IsSpecificSourceId(source_id) || active_source_ids.Find(source_id) == -1) {
+				continue;
+			}
+
+			EditorBuildMenuSourceConfig source_config = LoadSourceConfig(GetSourceConfigFilePath(source_id), source_id);
+			if (!source_config) {
+				continue;
+			}
+
+			if (source_config.Sections.Count() == 0 && source_config.PathRules.Count() == 0) {
+				continue;
+			}
+
+			s_SourceConfigs.Insert(source_config);
+			EditorLog.Info("EditorBuildMenuInference::LoadSourceConfigs loaded %1 for %2", source_config.FilePath, source_id);
+		}
+	}
+
+	protected static EditorBuildMenuSourceConfig LoadSourceConfig(string file_name, string source_id)
+	{
+		EditorBuildMenuSourceConfig source_config = new EditorBuildMenuSourceConfig(source_id, file_name);
+		EditorBuildMenuXmlClassification xml_definition = new EditorBuildMenuXmlClassification(source_config.Sections, source_config.PathRules, false, source_id, true);
+		GetXMLApi().Read(file_name, xml_definition);
+		if (!xml_definition.IsSuccessful()) {
+			EditorLog.Error("EditorBuildMenuInference::LoadSourceConfig failed to parse %1", file_name);
+			return null;
+		}
+
+		return source_config;
+	}
+
+	protected static void RebuildPathRules()
+	{
+		s_PathRules = {};
+
+		foreach (EditorBuildMenuPathRule default_path_rule: s_DefaultPathRules) {
+			if (default_path_rule) {
+				s_PathRules.Insert(default_path_rule);
+			}
+		}
+
+		foreach (EditorBuildMenuSourceConfig source_config: s_SourceConfigs) {
+			if (!source_config) {
+				continue;
+			}
+
+			foreach (EditorBuildMenuPathRule source_config_rule: source_config.PathRules) {
+				if (!source_config_rule) {
+					continue;
+				}
+
+				s_PathRules.Insert(source_config_rule);
+			}
 		}
 
 		SortPathRules();
@@ -582,6 +751,97 @@ class EditorBuildMenuInference
 		}
 
 		s_PathRules = sorted;
+	}
+
+	protected static array<string> GetActiveSourceIds(array<ref EditorPlaceableItem> placeable_items)
+	{
+		ref array<string> source_ids = {};
+		foreach (EditorPlaceableItem placeable_item: placeable_items) {
+			if (!placeable_item) {
+				continue;
+			}
+
+			EditorBuildMenuMatchResult match_result = ClassifyInternal(placeable_item);
+			if (!match_result || !match_result.Resolved || !IsSpecificSourceId(match_result.SourceId)) {
+				continue;
+			}
+
+			InsertSortedUnique(source_ids, match_result.SourceId);
+		}
+
+		return source_ids;
+	}
+
+	protected static array<string> GetSourceConfigFiles()
+	{
+		ref array<string> source_config_files = {};
+		string config_directory = SystemPath.Format(Editor.EDITOR_CONFIGS_DIRECTORY);
+		if (!FileExist(config_directory)) {
+			return source_config_files;
+		}
+
+		array<string> discovered_files = Directory.EnumerateFiles(config_directory, SOURCE_CONFIG_FILE_PREFIX + "*.xml", 0);
+		foreach (string discovered_file: discovered_files) {
+			InsertSortedUnique(source_config_files, discovered_file);
+		}
+
+		return source_config_files;
+	}
+
+	protected static string GetSourceIdFromConfigFile(string file_name)
+	{
+		string normalized_name = NormalizeDedupePath(file_name);
+		if (normalized_name == string.Empty) {
+			return string.Empty;
+		}
+
+		int last_separator = normalized_name.LastIndexOf("/");
+		if (last_separator != -1 && last_separator + 1 < normalized_name.Length()) {
+			normalized_name = normalized_name.Substring(last_separator + 1, normalized_name.Length() - last_separator - 1);
+		}
+
+		normalized_name = NormalizeId(StripExtension(normalized_name));
+		string prefix = NormalizeId(SOURCE_CONFIG_FILE_PREFIX);
+		if (normalized_name.IndexOf(prefix) != 0 || normalized_name.Length() <= prefix.Length()) {
+			return string.Empty;
+		}
+
+		return normalized_name.Substring(prefix.Length(), normalized_name.Length() - prefix.Length());
+	}
+
+	protected static bool IsSpecificSourceId(string source_id)
+	{
+		source_id = NormalizeId(source_id);
+		if (source_id == string.Empty) {
+			return false;
+		}
+
+		if (source_id == "vanilla") {
+			return false;
+		}
+
+		if (source_id == "dayzeditor") {
+			return false;
+		}
+
+		return source_id != "modded";
+	}
+
+	protected static void InsertSortedUnique(array<string> values, string value)
+	{
+		if (!values || value == string.Empty || values.Find(value) != -1) {
+			return;
+		}
+
+		int insert_index = values.Count();
+		for (int i = 0; i < values.Count(); i++) {
+			if (value < values[i]) {
+				insert_index = i;
+				break;
+			}
+		}
+
+		values.InsertAt(value, insert_index);
 	}
 
 	protected static array<ref DayZEditorBuildMenuSectionRegistration> GetRegisteredSections()
@@ -637,14 +897,36 @@ class EditorBuildMenuInference
 		return lhs.Path < rhs.Path;
 	}
 
-	protected static EditorBuildMenuPathRule FindPathRule(string normalized_path)
+	protected static EditorBuildMenuPathRule FindSourceConfigPathRule(string normalized_path)
 	{
 		if (normalized_path == string.Empty) {
 			return null;
 		}
 
-		// The longest prefix wins so child folders can override parent folders.
 		foreach (EditorBuildMenuPathRule path_rule: s_PathRules) {
+			if (!path_rule || !path_rule.IsFromSourceConfig()) {
+				continue;
+			}
+
+			if (MatchesPathPrefix(normalized_path, path_rule.Path)) {
+				return path_rule;
+			}
+		}
+
+		return null;
+	}
+
+	protected static EditorBuildMenuPathRule FindDefaultPathRule(string normalized_path)
+	{
+		if (normalized_path == string.Empty) {
+			return null;
+		}
+
+		foreach (EditorBuildMenuPathRule path_rule: s_PathRules) {
+			if (!path_rule || path_rule.IsFromSourceConfig()) {
+				continue;
+			}
+
 			if (MatchesPathPrefix(normalized_path, path_rule.Path)) {
 				return path_rule;
 			}

@@ -113,6 +113,7 @@ class Editor: Managed
 	protected float m_TimeSinceLastBackup;
 	
 	static const string	ROOT_DIRECTORY = SystemPath.Combine(SystemPath.Saves(), "Editor");
+	static const string EDITOR_CONFIGS_DIRECTORY = SystemPath.Combine(ROOT_DIRECTORY, "EditorConfigs");
 	static const string BRUSH_XML_FILE = "DayZEditor/Scripts/Data/Defaults/Brushes.xml";
 	
 	// modes
@@ -209,6 +210,7 @@ class Editor: Managed
 
 		// Initialize the profiles/editor directory;		
 		MakeDirectory(ROOT_DIRECTORY);
+		MakeDirectory(EDITOR_CONFIGS_DIRECTORY);
 		
 		// Load brush files
 		string brush_file = SystemPath.Format(GetSettings().BrushFile);

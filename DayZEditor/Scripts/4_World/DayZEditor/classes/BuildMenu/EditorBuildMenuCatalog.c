@@ -14,6 +14,7 @@ class EditorBuildMenuCatalog: Managed
 
 	void Build(array<ref EditorPlaceableItem> placeable_items)
 	{
+		EditorBuildMenuInference.LoadDefinitions(placeable_items);
 		m_Taxonomy = EditorBuildMenuInference.CreateTaxonomy();
 		m_Entries.Clear();
 		m_EntriesByStableId.Clear();
