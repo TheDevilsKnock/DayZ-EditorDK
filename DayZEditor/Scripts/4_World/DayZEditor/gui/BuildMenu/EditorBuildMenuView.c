@@ -779,6 +779,40 @@ class EditorBuildMenuCard: ScriptView
 	}
 }
 
+class EditorBuildMenuSectionHeaderHandler: ScriptedWidgetEventHandler
+{
+	protected EditorBuildMenuSectionView m_Owner;
+
+	void EditorBuildMenuSectionHeaderHandler(EditorBuildMenuSectionView owner)
+	{
+		m_Owner = owner;
+	}
+
+	override bool OnMouseButtonDown(Widget w, int x, int y, int button)
+	{
+		if (!m_Owner) {
+			return false;
+		}
+
+		return m_Owner.OnHeaderMouseButtonDown(w, x, y, button);
+	}
+
+	override bool OnClick(Widget w, int x, int y, int button)
+	{
+		return m_Owner && m_Owner.OnClick(w, x, y, button);
+	}
+
+	override bool OnMouseEnter(Widget w, int x, int y)
+	{
+		return m_Owner && m_Owner.OnMouseEnter(w, x, y);
+	}
+
+	override bool OnMouseLeave(Widget w, Widget enterW, int x, int y)
+	{
+		return m_Owner && m_Owner.OnMouseLeave(w, enterW, x, y);
+	}
+}
+
 class EditorBuildMenuSectionView: ScriptView
 {
 	static const float TITLE_HEIGHT = 22;
@@ -787,6 +821,8 @@ class EditorBuildMenuSectionView: ScriptView
 	static const int MAX_COLUMNS = 9;
 
 	protected EditorBuildMenuView m_Owner;
+	protected ref EditorBuildMenuSectionData m_SectionData;
+	protected ref EditorBuildMenuSectionHeaderHandler m_HeaderHandler;
 	protected string m_SectionKey;
 	protected ref array<ref EditorBuildMenuCard> m_Cards = {};
 	protected float m_Height;
@@ -803,6 +839,7 @@ class EditorBuildMenuSectionView: ScriptView
 	void EditorBuildMenuSectionView(EditorBuildMenuView owner, EditorBuildMenuSectionData section_data, EditorPlaceableItem selected_placeable, float available_width, string section_key, bool collapsed)
 	{
 		m_Owner = owner;
+		m_SectionData = section_data;
 		m_SectionKey = section_key;
 		m_IsCollapsed = collapsed;
 
@@ -820,11 +857,16 @@ class EditorBuildMenuSectionView: ScriptView
 		}
 
 		UpdateCollapseButton();
+		BindHeaderEvents();
 		LayoutCards(available_width);
 	}
 
 	void ~EditorBuildMenuSectionView()
 	{
+		if (BuildMenuSectionHeader) {
+			BuildMenuSectionHeader.SetHandler(null);
+		}
+
 		for (int i = m_Cards.Count() - 1; i >= 0; i--) {
 			delete m_Cards[i];
 		}
@@ -867,6 +909,16 @@ class EditorBuildMenuSectionView: ScriptView
 		return super.OnClick(w, x, y, button);
 	}
 
+	bool OnHeaderMouseButtonDown(Widget w, int x, int y, int button)
+	{
+		if (button == MouseState.RIGHT) {
+			m_Owner.OpenSectionContextMenu(m_SectionData, x, y);
+			return true;
+		}
+
+		return false;
+	}
+
 	override bool OnMouseEnter(Widget w, int x, int y)
 	{
 		if (IsPartOfCollapseButton(w)) {
@@ -885,6 +937,16 @@ class EditorBuildMenuSectionView: ScriptView
 		}
 
 		return super.OnMouseLeave(w, enterW, x, y);
+	}
+
+	protected void BindHeaderEvents()
+	{
+		if (!BuildMenuSectionHeader) {
+			return;
+		}
+
+		m_HeaderHandler = new EditorBuildMenuSectionHeaderHandler(this);
+		BuildMenuSectionHeader.SetHandler(m_HeaderHandler);
 	}
 
 	protected void LayoutCards(float available_width)
@@ -1173,6 +1235,11 @@ class EditorBuildMenuView: ScriptView
 		return m_IsOpen;
 	}
 
+	EditorBuildMenuCatalog GetCatalog()
+	{
+		return m_Catalog;
+	}
+
 	void Open()
 	{
 		if (m_IsOpen) {
@@ -1243,6 +1310,10 @@ class EditorBuildMenuView: ScriptView
 		float scroll_position = BuildMenuScroll.GetVScrollPos();
 		m_PreviewRefreshTimer -= dt;
 		if (m_PreviewRefreshTimer <= 0 || scroll_position != m_LastScrollPosition) {
+			if (scroll_position != m_LastScrollPosition) {
+				CloseCurrentMenu();
+			}
+
 			RefreshPreviews();
 		}
 	}
@@ -1286,7 +1357,17 @@ class EditorBuildMenuView: ScriptView
 
 		m_Editor.GetObjectManager().CurrentSelectedItem = entry.Placeable;
 		delete EditorHud.CurrentMenu;
-		EditorHud.CurrentMenu = new EditorPlaceableContextMenu(x, y, entry.Placeable);
+		EditorHud.CurrentMenu = new EditorBuildMenuContextMenu(x, y, this, entry);
+	}
+
+	void OpenSectionContextMenu(EditorBuildMenuSectionData section, int x, int y)
+	{
+		if (!section) {
+			return;
+		}
+
+		delete EditorHud.CurrentMenu;
+		EditorHud.CurrentMenu = new EditorBuildMenuContextMenu(x, y, this, null, section);
 	}
 
 	void OnCardFavoriteChanged(EditorBuildMenuCard card, bool favorite)
@@ -1296,6 +1377,15 @@ class EditorBuildMenuView: ScriptView
 		}
 
 		m_EditorHud.SetFavoriteState(card.GetEntry().Placeable, favorite);
+	}
+
+	override bool OnMouseButtonDown(Widget w, int x, int y, int button)
+	{
+		if ((button == MouseState.LEFT || button == MouseState.RIGHT) && EditorHud.CurrentMenu && !IsPartOfCurrentMenu(w)) {
+			CloseCurrentMenu();
+		}
+
+		return super.OnMouseButtonDown(w, x, y, button);
 	}
 
 	override bool OnClick(Widget w, int x, int y, int button)
@@ -1373,6 +1463,7 @@ class EditorBuildMenuView: ScriptView
 			return super.OnMouseWheel(w, x, y, wheel);
 		}
 
+		CloseCurrentMenu();
 		BuildMenuScroll.VScrollStep(wheel * 14);
 		RefreshPreviews();
 		return true;
@@ -2513,6 +2604,20 @@ class EditorBuildMenuView: ScriptView
 	protected bool IsDescendantOfBuildMenu(Widget widget)
 	{
 		return IsDescendantOfWidget(widget, BuildMenuOverlay);
+	}
+
+	protected bool IsPartOfCurrentMenu(Widget widget)
+	{
+		if (!EditorHud.CurrentMenu) {
+			return false;
+		}
+
+		return IsDescendantOfWidget(widget, EditorHud.CurrentMenu.GetLayoutRoot());
+	}
+
+	protected void CloseCurrentMenu()
+	{
+		delete EditorHud.CurrentMenu;
 	}
 
 	protected bool IsDescendantOfWidget(Widget widget, Widget parent_widget)
